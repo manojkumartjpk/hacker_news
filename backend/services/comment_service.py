@@ -74,6 +74,27 @@ class CommentService:
         return top_level_comments
 
     @staticmethod
+    def get_recent_comments(db: Session, skip: int = 0, limit: int = 30) -> list[dict]:
+        results = db.query(Comment, User.username, Post.title).join(User).join(Post).order_by(
+            Comment.created_at.desc()
+        ).offset(skip).limit(limit).all()
+
+        recent_comments = []
+        for comment, username, post_title in results:
+            recent_comments.append({
+                "id": comment.id,
+                "text": comment.text,
+                "user_id": comment.user_id,
+                "post_id": comment.post_id,
+                "parent_id": comment.parent_id,
+                "created_at": comment.created_at,
+                "username": username,
+                "post_title": post_title
+            })
+
+        return recent_comments
+
+    @staticmethod
     def update_comment(db: Session, comment_id: int, comment_update: CommentUpdate, user_id: int) -> dict:
         comment = CommentService.get_comment(db, comment_id)
         if comment.user_id != user_id:

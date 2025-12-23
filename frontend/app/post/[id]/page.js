@@ -2,10 +2,33 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import PostItem from '../../../components/PostItem';
 import CommentItem from '../../../components/CommentItem';
 import { postsAPI, commentsAPI } from '../../../lib/api';
+
+const safeHostname = (url) => {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname;
+  } catch (error) {
+    return null;
+  }
+};
+
+const timeAgo = (date) => {
+  const now = new Date();
+  const postDate = new Date(date);
+  const diffInSeconds = Math.floor((now - postDate) / 1000);
+
+  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours} hours ago`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays} days ago`;
+};
+
+const pointsLabel = (score) => (score === 1 ? 'point' : 'points');
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -67,64 +90,135 @@ export default function PostDetail() {
     }
   };
 
+  const handleVote = async (voteType) => {
+    try {
+      await postsAPI.vote(id, { vote_type: voteType });
+      fetchPost();
+    } catch (error) {
+      alert('Failed to vote. Please try again.');
+    }
+  };
+
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return <div className="hn-loading">Loading...</div>;
   }
 
   if (!post) {
-    return <div className="text-center py-8">Post not found</div>;
+    return <div className="hn-loading">Post not found</div>;
   }
 
+  const hostname = safeHostname(post.url);
+
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded shadow mb-6">
-        <PostItem post={post} onVote={() => fetchPost()} />
-      </div>
+    <>
+      <table border="0" cellPadding="0" cellSpacing="0">
+        <tbody>
+          <tr className="athing submission">
+            <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+              <span className="rank"></span>
+            </td>
+            <td style={{ verticalAlign: 'top' }} className="votelinks">
+              <center>
+                <a
+                  id={`up_${post.id}`}
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleVote(1);
+                  }}
+                >
+                  <div className="votearrow" title="upvote"></div>
+                </a>
+              </center>
+            </td>
+            <td className="title">
+              <span className="titleline">
+                {post.url ? (
+                  <a href={post.url} target="_blank" rel="noopener noreferrer">
+                    {post.title}
+                  </a>
+                ) : (
+                  <span>{post.title}</span>
+                )}
+                {hostname && (
+                  <span className="sitebit comhead">
+                    {' '}
+                    (
+                    <a href={`from?site=${hostname}`}>
+                      <span className="sitestr">{hostname}</span>
+                    </a>
+                    )
+                  </span>
+                )}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td colSpan="2"></td>
+            <td className="subtext">
+                <span className="subline">
+                  <span className="score" id={`score_${post.id}`}>{post.score} {pointsLabel(post.score)}</span> by{' '}
+                  <a href={`/user/${post.username}`} className="hnuser">
+                    {post.username}
+                  </a>{' '}
+                  <span className="age" title={new Date(post.created_at).toISOString()}>
+                    {timeAgo(post.created_at)}
+                  </span>{' '}
+                  <span id={`unv_${post.id}`}></span> |{' '}
+                  <a href={`/post/${post.id}`}>discuss</a>
+                </span>
+              </td>
+            </tr>
+            <tr className="spacer" style={{ height: '5px' }}></tr>
+          </tbody>
+      </table>
 
-      <div className="bg-white rounded shadow p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4">Add Comment</h2>
-        <form onSubmit={handleCommentSubmit}>
-          <textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-orange-500"
-            rows="4"
-            placeholder="Write a comment..."
-            required
-          />
-          <button
-            type="submit"
-            disabled={submittingComment}
-            className="mt-3 bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600 disabled:opacity-50"
-          >
-            {submittingComment ? 'Posting...' : 'Post Comment'}
-          </button>
-        </form>
-      </div>
+      <br />
 
-      <div className="bg-white rounded shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold">
-            Comments ({comments.length})
-          </h2>
-        </div>
-        
-        {comments.length > 0 ? (
-          <div className="p-6">
-            {comments.map(comment => (
+      <table border="0" cellPadding="0" cellSpacing="0">
+        <tbody>
+          <tr>
+            <td>
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                className="reply-textarea"
+                placeholder="Add a comment..."
+              />
+              <br />
+              <button
+                onClick={handleCommentSubmit}
+                disabled={submittingComment}
+                className="comment-submit"
+              >
+                {submittingComment ? 'Posting...' : 'add comment'}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <br />
+
+      {comments.length > 0 && (
+        <table border="0" cellPadding="0" cellSpacing="0">
+          <tbody>
+            {comments.map((comment) => (
               <CommentItem
                 key={comment.id}
                 comment={comment}
                 onReply={handleReply}
               />
             ))}
-          </div>
-        ) : (
-          <div className="p-6 text-center text-gray-500">
-            No comments yet. Be the first to comment!
-          </div>
-        )}
-      </div>
-    </div>
+          </tbody>
+        </table>
+      )}
+
+      {comments.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '20px', color: '#828282', fontSize: '10pt' }}>
+          No comments yet.
+        </div>
+      )}
+    </>
   );
 }

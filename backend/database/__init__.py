@@ -9,7 +9,11 @@ POSTGRES_URL = os.getenv("POSTGRES_URL", "postgresql://user:password@postgres:54
 class Base(DeclarativeBase):
     pass
 
-engine = create_engine(POSTGRES_URL)
+connect_args = {}
+if POSTGRES_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+
+engine = create_engine(POSTGRES_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Import all models to ensure they are registered with SQLAlchemy

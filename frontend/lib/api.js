@@ -51,6 +51,7 @@ export const commentsAPI = {
   createComment: (postId, commentData) => api.post(`/posts/${postId}/comments`, commentData),
   updateComment: (commentId, commentData) => api.put(`/posts/${commentId}`, commentData),
   deleteComment: (commentId) => api.delete(`/posts/${commentId}`),
+  getRecentComments: (params) => api.get('/comments/recent', { params }),
 };
 
 export const notificationsAPI = {

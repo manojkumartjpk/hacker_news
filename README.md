@@ -69,6 +69,20 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
+## Tests (Dockerized by default)
+
+Run all tests in Docker (backend + frontend):
+
+```bash
+./scripts/run-tests.sh
+```
+
+Skip Docker locally (runs tests directly on your machine):
+
+```bash
+USE_DOCKER_TESTS=0 ./scripts/run-tests.sh
+```
+
 ## API Endpoints
 
 ### Authentication

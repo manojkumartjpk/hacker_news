@@ -6,14 +6,16 @@ class PostBase(BaseModel):
     title: str
     url: Optional[str] = None
     text: Optional[str] = None
+    post_type: Optional[str] = "story"
 
 class PostCreate(PostBase):
-    pass
+    post_type: Optional[str] = "story"
 
 class PostUpdate(BaseModel):
     title: Optional[str] = None
     url: Optional[str] = None
     text: Optional[str] = None
+    post_type: Optional[str] = None
 
 class Post(PostBase):
     id: int

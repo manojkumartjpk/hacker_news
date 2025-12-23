@@ -5,6 +5,7 @@ from schemas import VoteCreate, Vote
 from services import VoteService
 from routers.auth import get_current_user
 from models import User
+from rate_limit import rate_limit
 
 router = APIRouter()
 
@@ -13,7 +14,8 @@ def vote_on_post(
     post_id: int,
     vote: VoteCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    rate_limited: bool = Depends(rate_limit(limit=120, window=60))
 ):
     if vote.vote_type not in [1, -1]:
         raise HTTPException(status_code=400, detail="Vote type must be 1 (upvote) or -1 (downvote)")

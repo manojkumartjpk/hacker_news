@@ -51,16 +51,14 @@ export default function PostItem({ post, onVote }) {
     <div className="hn-post">
       <div style={{ marginBottom: '2px' }}>
         <span
-          className={`hn-vote-arrow up ${userVote === 1 ? 'voted' : ''}`}
+          className={`hn-vote-arrow up ${userVote === 1 ? 'voted-up' : ''}`}
           onClick={() => handleVote(1)}
-          style={{ color: userVote === 1 ? '#ff6600' : '#828282' }}
         >
           ▲
         </span>
         <span
-          className={`hn-vote-arrow down ${userVote === -1 ? 'voted' : ''}`}
+          className={`hn-vote-arrow down ${userVote === -1 ? 'voted-down' : ''}`}
           onClick={() => handleVote(-1)}
-          style={{ color: userVote === -1 ? '#0000ff' : '#828282' }}
         >
           ▼
         </span>
@@ -76,7 +74,7 @@ export default function PostItem({ post, onVote }) {
           )}
         </span>
         {post.url && (
-          <span className="hn-post-meta" style={{ marginLeft: '4px' }}>
+          <span className="hn-post-domain">
             ({new URL(post.url).hostname})
           </span>
         )}

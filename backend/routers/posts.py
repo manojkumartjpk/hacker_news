@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
-from schemas import PostCreate, Post, PostWithUser
+from schemas import PostCreate, Post, PostUpdate
 from services import PostService
 from routers.auth import get_current_user
 from models import User
@@ -23,10 +23,11 @@ def create_post(
 def get_posts(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    sort: str = Query("new", regex="^(new|top)$"),
+    sort: str = Query("new", regex="^(new|top|best)$"),
+    post_type: str | None = Query(None, regex="^(story|ask|show|job)$"),
     db: Session = Depends(get_db)
 ):
-    posts = PostService.get_posts(db, skip=skip, limit=limit, sort=sort)
+    posts = PostService.get_posts(db, skip=skip, limit=limit, sort=sort, post_type=post_type)
     return posts
 
 @router.get("/{post_id}", response_model=Post)
@@ -36,7 +37,7 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
 @router.put("/{post_id}", response_model=Post)
 def update_post(
     post_id: int,
-    post_update: PostCreate,
+    post_update: PostUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

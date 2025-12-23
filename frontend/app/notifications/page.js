@@ -50,44 +50,52 @@ export default function Notifications() {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return <div className="hn-loading">Loading...</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Notifications</h1>
-
-      <div className="bg-white rounded shadow">
-        {notifications.length > 0 ? (
-          notifications.map(notification => (
-            <div
-              key={notification.id}
-              className={`p-4 border-b border-gray-200 ${!notification.read ? 'bg-blue-50' : ''}`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <p className="text-gray-800">{notification.message}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {timeAgo(notification.created_at)}
-                  </p>
-                </div>
-                {!notification.read && (
-                  <button
-                    onClick={() => markAsRead(notification.id)}
-                    className="ml-4 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-                  >
-                    Mark as read
-                  </button>
-                )}
+    <table border="0" cellPadding="0" cellSpacing="0">
+      <tbody>
+        <tr>
+          <td className="title" style={{ paddingBottom: '10px' }}>Notifications</td>
+        </tr>
+        <tr>
+          <td>
+            {notifications.length > 0 ? (
+              <table border="0" cellPadding="0" cellSpacing="0">
+                <tbody>
+                  {notifications.map((notification) => (
+                    <tr key={notification.id}>
+                      <td style={{ padding: '4px 0' }}>
+                        <div style={{ fontSize: '10pt', marginBottom: '2px' }}>
+                          {notification.message}
+                        </div>
+                        <div style={{ fontSize: '8pt', color: '#828282' }}>
+                          {timeAgo(notification.created_at)}
+                          {!notification.read && (
+                            <span style={{ marginLeft: '8px' }}>
+                              <button
+                                onClick={() => markAsRead(notification.id)}
+                                style={{ color: '#ff6600', textDecoration: 'none', fontSize: '8pt' }}
+                              >
+                                [mark as read]
+                              </button>
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#828282', fontSize: '10pt' }}>
+                No notifications yet.
               </div>
-            </div>
-          ))
-        ) : (
-          <div className="p-8 text-center text-gray-500">
-            No notifications yet.
-          </div>
-        )}
-      </div>
-    </div>
+            )}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }

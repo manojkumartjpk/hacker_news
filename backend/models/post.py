@@ -9,6 +9,7 @@ class Post(Base):
     title: Mapped[str] = mapped_column(String(300), index=True)
     url: Mapped[str] = mapped_column(String(500), nullable=True)  # URL or text post
     text: Mapped[str] = mapped_column(Text, nullable=True)  # For text posts
+    post_type: Mapped[str] = mapped_column(String(20), default="story", index=True)
     score: Mapped[int] = mapped_column(Integer, default=0)  # Cached score from votes
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())

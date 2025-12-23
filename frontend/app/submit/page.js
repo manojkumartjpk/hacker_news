@@ -8,7 +8,8 @@ export default function Submit() {
   const [formData, setFormData] = useState({
     title: '',
     url: '',
-    text: ''
+    text: '',
+    post_type: 'story'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,74 +45,97 @@ export default function Submit() {
   };
 
   return (
-    <div style={{ margin: '20px auto', maxWidth: '600px' }}>
-      <h1 style={{ fontSize: '14pt', marginBottom: '20px' }}>Submit</h1>
-      
-      {error && (
-        <div style={{ color: '#ff0000', marginBottom: '10px', fontSize: '10pt' }}>
-          {error}
-        </div>
-      )}
+    <table border="0" cellPadding="0" cellSpacing="0">
+      <tbody>
+        <tr>
+          <td className="title" style={{ paddingBottom: '10px' }}>Submit</td>
+        </tr>
+        <tr>
+          <td>
+            {error && (
+              <div className="hn-error">
+                {error}
+              </div>
+            )}
 
-      <form onSubmit={handleSubmit} className="hn-form">
-        <table className="hn-table">
-          <tbody>
-            <tr>
-              <td style={{ fontSize: '10pt', paddingRight: '10px', verticalAlign: 'top' }}>title:</td>
-              <td>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  style={{ width: '100%' }}
-                  required
-                />
-              </td>
-            </tr>
-            <tr>
-              <td style={{ fontSize: '10pt', paddingRight: '10px', verticalAlign: 'top' }}>url:</td>
-              <td>
-                <input
-                  type="url"
-                  name="url"
-                  value={formData.url}
-                  onChange={handleChange}
-                  placeholder="https://example.com"
-                  style={{ width: '100%' }}
-                />
-                <div style={{ fontSize: '8pt', color: '#828282', marginTop: '2px' }}>
-                  Leave blank to submit a text post
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ fontSize: '10pt', paddingRight: '10px', verticalAlign: 'top' }}>text:</td>
-              <td>
-                <textarea
-                  name="text"
-                  value={formData.text}
-                  onChange={handleChange}
-                  placeholder="Text content (optional if URL is provided)"
-                  style={{ width: '100%', height: '100px' }}
-                />
-              </td>
-            </tr>
-            <tr>
-              <td></td>
-              <td>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{ marginTop: '10px' }}
-                >
-                  {loading ? 'Submitting...' : 'submit'}
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </form>
-    </div>
+            <form onSubmit={handleSubmit} className="hn-form">
+              <table border="0" cellPadding="0" cellSpacing="0">
+                <tbody>
+                  <tr>
+                    <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>title:</td>
+                    <td>
+                      <input
+                        type="text"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        style={{ width: '100%' }}
+                        required
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>url:</td>
+                    <td>
+                      <input
+                        type="url"
+                        name="url"
+                        value={formData.url}
+                        onChange={handleChange}
+                        placeholder="https://example.com"
+                        style={{ width: '100%' }}
+                      />
+                      <div style={{ fontSize: '8pt', color: '#828282', marginTop: '2px' }}>
+                        Leave blank to submit a text post
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>text:</td>
+                    <td>
+                      <textarea
+                        name="text"
+                        value={formData.text}
+                        onChange={handleChange}
+                        placeholder="Text content (optional if URL is provided)"
+                        style={{ width: '100%', height: '100px' }}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>type:</td>
+                    <td>
+                      <select
+                        name="post_type"
+                        value={formData.post_type}
+                        onChange={handleChange}
+                        style={{ width: '200px' }}
+                      >
+                        <option value="story">story</option>
+                        <option value="ask">ask</option>
+                        <option value="show">show</option>
+                        <option value="job">job</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td></td>
+                    <td>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        style={{ marginTop: '10px' }}
+                      >
+                        {loading ? 'Submitting...' : 'submit'}
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }

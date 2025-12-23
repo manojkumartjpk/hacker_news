@@ -1,10 +1,5 @@
-import redis
-import os
 from fastapi import Request, HTTPException, Depends
-import time
-
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
-redis_client = redis.Redis.from_url(REDIS_URL)
+from cache import redis_get, redis_incr, redis_expire
 
 def rate_limit(limit: int = 100, window: int = 60):
     """
@@ -20,22 +15,25 @@ def rate_limit(limit: int = 100, window: int = 60):
         key = f"rate_limit:{client_ip}"
 
         # Get current count
-        current = redis_client.get(key)
+        current = redis_get(key)
         if current is None:
             current = 0
         else:
-            current = int(current)
+            try:
+                current = int(current)
+            except ValueError:
+                current = 0
 
         # Check if limit exceeded
         if current >= limit:
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
         # Increment counter
-        redis_client.incr(key)
+        redis_incr(key)
 
         # Set expiry if this is the first request in window
         if current == 0:
-            redis_client.expire(key, window)
+            redis_expire(key, window)
 
         return True
 

@@ -14,7 +14,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js dev server
+    allow_origins=["*"],  # Allow all origins for Docker environment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,7 +26,8 @@ from routers import (
     posts_router,
     votes_router,
     comments_router,
-    notifications_router
+    notifications_router,
+    comments_feed_router
 )
 
 # Include routers with prefixes
@@ -34,6 +35,7 @@ app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(posts_router, prefix="/posts", tags=["posts"])
 app.include_router(votes_router, prefix="/posts", tags=["votes"])
 app.include_router(comments_router, prefix="/posts", tags=["comments"])
+app.include_router(comments_feed_router, prefix="/comments", tags=["comments"])
 app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 
 # Create tables on startup

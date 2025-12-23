@@ -3,23 +3,48 @@ from sqlalchemy import desc
 from models import Post, User, Vote
 from schemas import PostCreate, PostUpdate
 from fastapi import HTTPException
-import redis
-import os
-
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
-redis_client = redis.Redis.from_url(REDIS_URL)
+from cache import redis_get, redis_setex, redis_incr
+import json
 
 class PostService:
+    FEED_CACHE_TTL_SECONDS = 300
+
+    @staticmethod
+    def _feed_cache_key(sort: str, skip: int, limit: int, post_type: str | None, version: int) -> str:
+        type_key = post_type or "all"
+        return f"feed:{sort}:{type_key}:v{version}:skip:{skip}:limit:{limit}"
+
+    @staticmethod
+    def _get_feed_cache_version() -> int:
+        cached = redis_get("feed:version")
+        if cached is None:
+            return 1
+        try:
+            return int(cached)
+        except ValueError:
+            return 1
+
+    @staticmethod
+    def bump_feed_cache_version() -> None:
+        # Incrementing the version keeps cache invalidation cheap and explicit.
+        new_version = redis_incr("feed:version")
+        if new_version is None:
+            return None
+
     @staticmethod
     def create_post(db: Session, post: PostCreate, user_id: int) -> dict:
         # Validate that either url or text is provided
         if not post.url and not post.text:
             raise HTTPException(status_code=400, detail="Post must have either a URL or text content")
+        allowed_types = {"story", "ask", "show", "job"}
+        if post.post_type and post.post_type not in allowed_types:
+            raise HTTPException(status_code=400, detail="Invalid post type")
 
         db_post = Post(
             title=post.title,
             url=post.url,
             text=post.text,
+            post_type=post.post_type or "story",
             user_id=user_id
         )
         db.add(db_post)
@@ -28,12 +53,16 @@ class PostService:
         
         # Get username
         user = db.query(User).filter(User.id == user_id).first()
+
+        # Invalidate cached feeds so new submissions show up quickly.
+        PostService.bump_feed_cache_version()
         
         return {
             "id": db_post.id,
             "title": db_post.title,
             "url": db_post.url,
             "text": db_post.text,
+            "post_type": db_post.post_type,
             "score": db_post.score,
             "user_id": db_post.user_id,
             "created_at": db_post.created_at,
@@ -47,44 +76,78 @@ class PostService:
             raise HTTPException(status_code=404, detail="Post not found")
         
         post, username = result
+        cached_score = redis_get(f"post:{post_id}:score")
+        score = int(cached_score) if cached_score is not None else post.score
+        if cached_score is None:
+            redis_setex(f"post:{post_id}:score", PostService.FEED_CACHE_TTL_SECONDS, str(post.score))
+
         return {
             "id": post.id,
             "title": post.title,
             "url": post.url,
             "text": post.text,
-            "score": post.score,
+            "post_type": post.post_type,
+            "score": score,
             "user_id": post.user_id,
             "created_at": post.created_at,
             "username": username
         }
 
     @staticmethod
-    def get_posts(db: Session, skip: int = 0, limit: int = 10, sort: str = "new") -> list[dict]:
+    def get_posts(
+        db: Session,
+        skip: int = 0,
+        limit: int = 10,
+        sort: str = "new",
+        post_type: str | None = None
+    ) -> list[dict]:
+        cache_version = PostService._get_feed_cache_version()
+        cache_key = PostService._feed_cache_key(sort, skip, limit, post_type, cache_version)
+        cached = redis_get(cache_key)
+        if cached:
+            try:
+                return json.loads(cached)
+            except json.JSONDecodeError:
+                pass
+
         query = db.query(Post, User.username).join(User)
+        if post_type:
+            query = query.filter(Post.post_type == post_type)
         if sort == "top":
-            # For top posts, we might want to sort by score, but since score is cached,
-            # we'll sort by created_at for simplicity in this demo
+            query = query.order_by(desc(Post.score), desc(Post.created_at))
+        elif sort == "best":
+            # Simple "best" ranking for demo purposes.
             query = query.order_by(desc(Post.score), desc(Post.created_at))
         else:  # "new"
             query = query.order_by(desc(Post.created_at))
 
         results = query.offset(skip).limit(limit).all()
-        
-        # Convert to dict with username
+
         posts_with_username = []
         for post, username in results:
+            cached_score = redis_get(f"post:{post.id}:score")
+            score = int(cached_score) if cached_score is not None else post.score
+            if cached_score is None:
+                redis_setex(
+                    f"post:{post.id}:score",
+                    PostService.FEED_CACHE_TTL_SECONDS,
+                    str(post.score)
+                )
             post_dict = {
                 "id": post.id,
                 "title": post.title,
                 "url": post.url,
                 "text": post.text,
-                "score": post.score,
+                "post_type": post.post_type,
+                "score": score,
                 "user_id": post.user_id,
-                "created_at": post.created_at,
+                "created_at": post.created_at.isoformat() if hasattr(post.created_at, "isoformat") else post.created_at,
                 "username": username
             }
             posts_with_username.append(post_dict)
-        
+
+        redis_setex(cache_key, PostService.FEED_CACHE_TTL_SECONDS, json.dumps(posts_with_username))
+
         return posts_with_username
 
     @staticmethod
@@ -96,6 +159,12 @@ class PostService:
             raise HTTPException(status_code=403, detail="Not authorized to update this post")
 
         update_data = post_update.model_dump(exclude_unset=True)
+        if "post_type" in update_data and update_data["post_type"] is None:
+            update_data.pop("post_type")
+        if "post_type" in update_data:
+            allowed_types = {"story", "ask", "show", "job"}
+            if update_data["post_type"] not in allowed_types:
+                raise HTTPException(status_code=400, detail="Invalid post type")
         for field, value in update_data.items():
             setattr(post, field, value)
 
@@ -110,6 +179,7 @@ class PostService:
             "title": post.title,
             "url": post.url,
             "text": post.text,
+            "post_type": post.post_type,
             "score": post.score,
             "user_id": post.user_id,
             "created_at": post.created_at,
@@ -140,13 +210,16 @@ class PostService:
             db.commit()
 
             # Cache in Redis
-            redis_client.set(f"post:{post_id}:score", score)
+            redis_setex(f"post:{post_id}:score", PostService.FEED_CACHE_TTL_SECONDS, str(score))
+
+            # Score changes affect top/best feeds.
+            PostService.bump_feed_cache_version()
 
         return score
 
     @staticmethod
     def get_cached_score(post_id: int) -> int:
-        cached_score = redis_client.get(f"post:{post_id}:score")
+        cached_score = redis_get(f"post:{post_id}:score")
         if cached_score is not None:
             return int(cached_score)
         return 0  # Default if not cached
