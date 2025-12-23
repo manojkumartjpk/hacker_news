@@ -4,7 +4,7 @@ from typing import List
 from database import get_db
 from schemas import Notification
 from services import NotificationService
-from routers.auth import get_current_user
+from auth.deps import get_current_user
 from models import User
 from rate_limit import rate_limit
 
@@ -18,6 +18,7 @@ def get_notifications(
     current_user: User = Depends(get_current_user),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """List notifications for the authenticated user."""
     return NotificationService.get_user_notifications(db, current_user.id, skip=skip, limit=limit)
 
 @router.put("/{notification_id}/read")
@@ -27,6 +28,7 @@ def mark_as_read(
     current_user: User = Depends(get_current_user),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """Mark a notification as read."""
     NotificationService.mark_notification_as_read(db, notification_id, current_user.id)
     return {"message": "Notification marked as read"}
 
@@ -36,5 +38,6 @@ def get_unread_count(
     current_user: User = Depends(get_current_user),
     rate_limited: bool = Depends(rate_limit(limit=60, window=60))
 ):
+    """Return the count of unread notifications."""
     count = NotificationService.get_unread_count(db, current_user.id)
     return {"unread_count": count}

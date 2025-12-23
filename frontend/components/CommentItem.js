@@ -19,7 +19,7 @@ const timeAgo = (date) => {
   return `${diffInDays} days ago`;
 };
 
-const MAX_NESTING = 5;
+const MAX_NESTING = 5; // Prevent runaway nesting in deep reply threads.
 
 export default function CommentItem({ comment, depth = 0, onReply, onRefresh, currentUser }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -31,6 +31,7 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
   const router = useRouter();
 
   useEffect(() => {
+    // Client-side auth check to toggle reply/vote affordances.
     const token = Cookies.get('access_token');
     setIsLoggedIn(!!token);
   }, []);
@@ -77,6 +78,7 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
               onClick={async (e) => {
                 e.preventDefault();
                 if (!isLoggedIn) {
+                  // Preserve context so the user returns to the same comment after login.
                   router.replace(`/login?next=/post/${comment.post_id}&vote=1&comment=${comment.id}`);
                   return;
                 }
@@ -206,6 +208,7 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
         </td>
       </tr>
 
+      {/* Recursive render for nested replies. */}
       {comment.replies && depth < MAX_NESTING && comment.replies.map((reply) => (
         <CommentItem
           key={reply.id}

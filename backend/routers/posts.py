@@ -4,7 +4,7 @@ from typing import List
 from database import get_db
 from schemas import PostCreate, Post, PostUpdate
 from services import PostService
-from routers.auth import get_current_user
+from auth.deps import get_current_user
 from models import User
 from rate_limit import rate_limit
 
@@ -17,6 +17,7 @@ def create_post(
     current_user: User = Depends(get_current_user),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))  # 10 posts per minute
 ):
+    """Create a new post for the authenticated user."""
     return PostService.create_post(db, post, current_user.id)
 
 @router.get("/", response_model=List[Post])
@@ -28,6 +29,7 @@ def get_posts(
     db: Session = Depends(get_db),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """List posts with optional paging, sorting, and filtering."""
     posts = PostService.get_posts(db, skip=skip, limit=limit, sort=sort, post_type=post_type)
     return posts
 
@@ -39,6 +41,7 @@ def search_posts(
     db: Session = Depends(get_db),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """Search posts by title or text."""
     return PostService.search_posts(db, query=q, skip=skip, limit=limit)
 
 @router.get("/{post_id}", response_model=Post)
@@ -47,6 +50,7 @@ def get_post(
     db: Session = Depends(get_db),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """Fetch a single post by ID."""
     return PostService.get_post(db, post_id)
 
 @router.put("/{post_id}", response_model=Post)
@@ -57,6 +61,7 @@ def update_post(
     current_user: User = Depends(get_current_user),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """Update a post owned by the authenticated user."""
     return PostService.update_post(db, post_id, post_update, current_user.id)
 
 @router.delete("/{post_id}")
@@ -66,5 +71,6 @@ def delete_post(
     current_user: User = Depends(get_current_user),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """Delete a post owned by the authenticated user."""
     PostService.delete_post(db, post_id, current_user.id)
     return {"message": "Post deleted successfully"}

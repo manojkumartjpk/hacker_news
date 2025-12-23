@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from schemas import CommentUpdate, Comment
 from services import CommentService
-from routers.auth import get_current_user
+from auth.deps import get_current_user
 from models import User
 from rate_limit import rate_limit
 
@@ -18,6 +18,7 @@ def update_comment(
     current_user: User = Depends(get_current_user),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """Update a comment owned by the authenticated user."""
     return CommentService.update_comment(db, comment_id, comment_update, current_user.id)
 
 
@@ -28,5 +29,6 @@ def delete_comment(
     current_user: User = Depends(get_current_user),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """Delete a comment owned by the authenticated user."""
     CommentService.delete_comment(db, comment_id, current_user.id)
     return {"message": "Comment deleted successfully"}

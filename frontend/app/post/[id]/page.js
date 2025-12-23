@@ -6,6 +6,7 @@ import Cookies from 'js-cookie';
 import CommentItem from '../../../components/CommentItem';
 import { postsAPI, commentsAPI, authAPI } from '../../../lib/api';
 
+// Extract a display-friendly hostname without throwing on invalid URLs.
 const safeHostname = (url) => {
   if (!url) return null;
   try {
@@ -15,6 +16,7 @@ const safeHostname = (url) => {
   }
 };
 
+// Humanize timestamps for post metadata.
 const timeAgo = (date) => {
   const now = new Date();
   const postDate = new Date(date);
@@ -43,6 +45,7 @@ export default function PostDetail() {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    // Read the auth token on the client to decide if we can show comment controls.
     const token = Cookies.get('access_token');
     setIsLoggedIn(!!token);
     if (token) {
@@ -56,6 +59,7 @@ export default function PostDetail() {
 
   useEffect(() => {
     if (id) {
+      // Fetch post and comments when the route param is available.
       fetchPost();
       fetchComments();
     }
@@ -86,6 +90,7 @@ export default function PostDetail() {
     if (!commentText.trim()) return;
     const token = Cookies.get('access_token');
     if (!token) {
+      // Send the user to login and return to this post afterward.
       router.replace(`/login?next=/post/${id}`);
       return;
     }

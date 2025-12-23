@@ -14,4 +14,5 @@ def get_recent_comments(
     db: Session = Depends(get_db),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
+    """List recent comments across all posts."""
     return CommentService.get_recent_comments(db, skip=skip, limit=limit)

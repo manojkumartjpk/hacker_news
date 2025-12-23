@@ -45,6 +45,7 @@ class CommentService:
 
     @staticmethod
     def get_comments_for_post(db: Session, post_id: int) -> list[dict]:
+        # Precompute scores per comment so we can join them in one query.
         comment_score_subq = db.query(
             CommentVote.comment_id.label("comment_id"),
             func.sum(CommentVote.vote_type).label("score")
@@ -61,7 +62,7 @@ class CommentService:
             Comment.post_id == post_id
         ).order_by(Comment.created_at).all()
         
-        # Convert to dicts
+        # Convert results into a lookup table keyed by comment id.
         comments_dict = {}
         for comment, username, score in results:
             comment_dict = {
@@ -77,7 +78,7 @@ class CommentService:
             }
             comments_dict[comment.id] = comment_dict
         
-        # Build threaded structure
+        # Build a threaded structure using parent_id relationships.
         top_level_comments = []
         for comment_id, comment in comments_dict.items():
             if comment["parent_id"] is None:
