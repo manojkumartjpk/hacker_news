@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from pymongo import MongoClient
+import redis
 from datetime import datetime
 import os
 
@@ -20,16 +20,15 @@ app.add_middleware(
 
 # Database URLs from environment
 POSTGRES_URL = os.getenv("POSTGRES_URL", "postgresql://user:password@postgres:5432/hackernews")
-MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongo:27017")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
 # SQLAlchemy setup for Postgres
 engine = create_engine(POSTGRES_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# MongoDB setup
-mongo_client = MongoClient(MONGO_URL)
-mongo_db = mongo_client.hackernews
+# Redis setup
+redis_client = redis.Redis.from_url(REDIS_URL)
 
 # Models
 class Story(Base):
