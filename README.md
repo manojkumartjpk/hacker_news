@@ -1,6 +1,39 @@
 # Hacker News Clone
 
-A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend), Postgres, and MongoDB.
+A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend), PostgreSQL, and Redis.
+
+## Features
+
+- User registration and authentication (JWT)
+- Post submission (URL or text posts)
+- Upvoting/downvoting posts
+- Threaded comments
+- Notifications for comments and replies
+- Rate limiting
+- Responsive UI
+
+## Tech Stack
+
+### Backend
+- **Language**: Python 3.11
+- **Framework**: FastAPI
+- **ORM**: SQLAlchemy 2.0
+- **Database**: PostgreSQL
+- **Cache**: Redis
+- **Auth**: JWT tokens
+- **Password Hashing**: bcrypt
+
+### Frontend
+- **Framework**: Next.js 15
+- **Styling**: Tailwind CSS
+- **HTTP Client**: Axios
+- **State Management**: React hooks
+
+## Architecture
+
+- **PostgreSQL**: System of record for users, posts, comments, votes, notifications
+- **Redis**: Caching for feed data, vote scores, rate limiting
+- **REST API**: Clean separation between routers, services, models, and schemas
 
 ## Setup
 
@@ -17,12 +50,10 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 4. Access the application:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
-   - Postgres: localhost:5432
-   - MongoDB: localhost:27017
+   - Database: localhost:5432 (PostgreSQL)
+   - Cache: localhost:6379 (Redis)
 
 ## Development
-
-For development without Docker:
 
 ### Frontend
 ```bash
@@ -40,13 +71,36 @@ uvicorn main:app --reload
 
 ## API Endpoints
 
-- GET / : Root message
-- GET /stories : Get all stories
-- POST /stories : Create a new story (params: title, url)
+### Authentication
+- `POST /auth/register` - Register new user
+- `POST /auth/login` - Login user
 
-## TODO
+### Posts
+- `GET /posts/` - Get posts feed (with pagination and sorting)
+- `POST /posts/` - Create new post
+- `GET /posts/{post_id}` - Get single post
+- `PUT /posts/{post_id}` - Update post
+- `DELETE /posts/{post_id}` - Delete post
+- `POST /posts/{post_id}/vote` - Vote on post
 
-- Add user authentication
-- Implement comments
+### Comments
+- `GET /posts/{post_id}/comments` - Get comments for post
+- `POST /posts/{post_id}/comments` - Create comment
+- `PUT /posts/{comment_id}` - Update comment
+- `DELETE /posts/{comment_id}` - Delete comment
+
+### Notifications
+- `GET /notifications/` - Get user notifications
+- `PUT /notifications/{id}/read` - Mark notification as read
+- `GET /notifications/unread/count` - Get unread count
+
+## Database Schema
+
+The application uses the following main entities:
+- **Users**: Authentication and profile data
+- **Posts**: Stories submitted by users
+- **Comments**: Threaded discussions on posts
+- **Votes**: User votes on posts
+- **Notifications**: User notifications for interactions
 - Add voting system
 - Improve UI/UX

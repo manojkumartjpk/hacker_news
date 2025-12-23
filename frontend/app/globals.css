@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -8,21 +12,165 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  background-color: #f6f6ef;
+  font-family: 'Verdana', 'Geneva', sans-serif;
+  font-size: 10pt;
+  line-height: 1.4;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: #000000;
 }
 
 a {
-  color: inherit;
+  color: #000000;
   text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+input, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+/* Hacker News specific styles */
+.hn-header {
+  background-color: #ff6600;
+  padding: 2px 0;
+}
+
+.hn-title {
+  font-size: 14pt;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.hn-nav a {
+  color: #ffffff;
+  margin-left: 8px;
+}
+
+.hn-nav a:hover {
+  text-decoration: underline;
+}
+
+.hn-post {
+  margin: 2px 0;
+  padding: 0 2px;
+}
+
+.hn-post-title {
+  font-size: 10pt;
+  line-height: 1.2;
+}
+
+.hn-post-meta {
+  font-size: 7pt;
+  color: #828282;
+}
+
+.hn-vote-arrow {
+  color: #828282;
+  cursor: pointer;
+  font-size: 8pt;
+  margin-right: 2px;
+}
+
+.hn-vote-arrow.up:hover {
+  color: #ff6600;
+}
+
+.hn-vote-arrow.down:hover {
+  color: #0000ff;
+}
+
+.hn-score {
+  font-size: 8pt;
+  color: #828282;
+  vertical-align: top;
+}
+
+.hn-comment-link {
+  color: #828282;
+}
+
+.hn-comment-link:hover {
+  color: #ff6600;
+}
+
+.hn-form input,
+.hn-form textarea {
+  border: 1px solid #828282;
+  padding: 2px;
+  margin: 2px 0;
+  width: 100%;
+}
+
+.hn-form button {
+  background-color: #ff6600;
+  color: #ffffff;
+  border: 1px solid #ff6600;
+  padding: 2px 4px;
+  margin: 2px 0;
+}
+
+.hn-form button:hover {
+  background-color: #ff8533;
+}
+
+.hn-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.hn-table td {
+  padding: 2px 4px;
+  vertical-align: top;
+}
+
+.hn-comment {
+  margin: 4px 0;
+  border-left: 2px solid #828282;
+  padding-left: 4px;
+}
+
+.hn-comment-meta {
+  font-size: 7pt;
+  color: #828282;
+  margin-bottom: 2px;
+}
+
+.hn-comment-text {
+  font-size: 9pt;
+  margin-bottom: 4px;
+}
+
+.hn-reply-form {
+  margin-top: 4px;
+  display: none;
+}
+
+.hn-reply-form.show {
+  display: block;
+}
+
+.hn-reply-button {
+  font-size: 7pt;
+  color: #828282;
+  cursor: pointer;
+}
+
+.hn-reply-button:hover {
+  color: #ff6600;
 }
 
 @media (prefers-color-scheme: dark) {
