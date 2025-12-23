@@ -15,6 +15,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [usernameStatus, setUsernameStatus] = useState('');
   const [passwordHint, setPasswordHint] = useState('');
+  const [success, setSuccess] = useState('');
   const router = useRouter();
 
   const handleChange = (e) => {
@@ -29,6 +30,7 @@ export default function Register() {
     setLoading(true);
     setError('');
     setUsernameStatus('');
+    setSuccess('');
 
     try {
       const passwordCheck = checkPasswordStrength(formData.password);
@@ -38,7 +40,10 @@ export default function Register() {
         return;
       }
       await authAPI.register(formData);
-      router.push('/login');
+      setSuccess('Account created. Redirecting to login...');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1200);
     } catch (error) {
       setError(error.response?.data?.detail || 'Registration failed. Please try again.');
     } finally {
@@ -60,13 +65,19 @@ export default function Register() {
   };
 
   const checkPasswordStrength = (password) => {
-    if (password.length < 8) {
-      return { valid: false, message: 'Password must be at least 8 characters.' };
+    if (password.length < 9) {
+      return { valid: false, message: 'Password must be at least 9 characters.' };
     }
-    if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-      return { valid: false, message: 'Password must include letters and numbers.' };
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, message: 'Password must include at least one uppercase letter.' };
     }
-    return { valid: true, message: 'Password strength: good.' };
+    if (!/[0-9]/.test(password)) {
+      return { valid: false, message: 'Password must include at least one number.' };
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      return { valid: false, message: 'Password must include at least one special character.' };
+    }
+    return { valid: true, message: 'Password strength: strong.' };
   };
 
   const handlePasswordChange = (e) => {
@@ -79,7 +90,7 @@ export default function Register() {
     <table border="0" cellPadding="0" cellSpacing="0">
       <tbody>
         <tr>
-          <td className="title" style={{ paddingBottom: '10px' }}>create account</td>
+          <td className="title" style={{ paddingBottom: '10px' }}>Create account</td>
         </tr>
         <tr>
           <td>
@@ -88,12 +99,17 @@ export default function Register() {
                 {error}
               </div>
             )}
+            {success && (
+              <div className="hn-success">
+                {success}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="hn-form">
               <table border="0" cellPadding="0" cellSpacing="0" className="hn-form-table">
                 <tbody>
                   <tr>
-                    <td className="hn-form-label">username:</td>
+                    <td className="hn-form-label">Username:</td>
                     <td>
                       <input
                         type="text"
@@ -116,7 +132,7 @@ export default function Register() {
                     </td>
                   </tr>
                   <tr>
-                    <td className="hn-form-label">email:</td>
+                    <td className="hn-form-label">Email:</td>
                     <td>
                       <input
                         type="email"
@@ -130,14 +146,14 @@ export default function Register() {
                     </td>
                   </tr>
                   <tr>
-                    <td className="hn-form-label">password:</td>
+                    <td className="hn-form-label">Password:</td>
                     <td>
                       <input
                         type="password"
                         name="password"
                         value={formData.password}
                         onChange={handlePasswordChange}
-                        title="At least 8 characters with letters and numbers"
+                        title="At least 9 characters, 1 uppercase, 1 number, 1 special character"
                         style={{ width: '200px' }}
                         required
                       />
@@ -158,7 +174,7 @@ export default function Register() {
                         disabled={loading}
                         style={{ marginTop: '10px' }}
                       >
-                        {loading ? 'creating...' : 'create account'}
+                        {loading ? 'Creating...' : 'Create account'}
                       </button>
                     </td>
                   </tr>
@@ -167,7 +183,7 @@ export default function Register() {
             </form>
 
             <div style={{ marginTop: '20px' }}>
-              <Link href="/login" style={{ color: '#ff6600' }}>login</Link>
+              <Link href="/login" style={{ color: '#ff6600' }}>Login</Link>
             </div>
           </td>
         </tr>

@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
-from models import Comment, Notification, NotificationType, User, Post
+from models import Comment, Notification, NotificationType, User, Post, CommentVote
+from sqlalchemy import func
 from schemas import CommentCreate, CommentUpdate
+from services.post_service import PostService
 from fastapi import HTTPException
 
 class CommentService:
@@ -18,6 +20,7 @@ class CommentService:
 
         # Create notification
         CommentService._create_notification_for_comment(db, db_comment)
+        PostService.bump_feed_cache_version()
 
         # Get username
         user = db.query(User).filter(User.id == user_id).first()
@@ -29,7 +32,8 @@ class CommentService:
             "post_id": db_comment.post_id,
             "parent_id": db_comment.parent_id,
             "created_at": db_comment.created_at,
-            "username": user.username
+            "username": user.username,
+            "score": 0
         }
 
     @staticmethod
@@ -41,14 +45,25 @@ class CommentService:
 
     @staticmethod
     def get_comments_for_post(db: Session, post_id: int) -> list[dict]:
-        # Get all comments for the post with usernames
-        results = db.query(Comment, User.username).join(User).filter(
+        comment_score_subq = db.query(
+            CommentVote.comment_id.label("comment_id"),
+            func.sum(CommentVote.vote_type).label("score")
+        ).group_by(CommentVote.comment_id).subquery()
+
+        results = db.query(
+            Comment,
+            User.username,
+            comment_score_subq.c.score
+        ).join(User).outerjoin(
+            comment_score_subq,
+            comment_score_subq.c.comment_id == Comment.id
+        ).filter(
             Comment.post_id == post_id
         ).order_by(Comment.created_at).all()
         
         # Convert to dicts
         comments_dict = {}
-        for comment, username in results:
+        for comment, username, score in results:
             comment_dict = {
                 "id": comment.id,
                 "text": comment.text,
@@ -57,6 +72,7 @@ class CommentService:
                 "parent_id": comment.parent_id,
                 "created_at": comment.created_at,
                 "username": username,
+                "score": score or 0,
                 "replies": []
             }
             comments_dict[comment.id] = comment_dict
@@ -95,7 +111,8 @@ class CommentService:
                 "parent_id": comment.parent_id,
                 "created_at": comment.created_at,
                 "username": username,
-                "post_title": post_title
+                "post_title": post_title,
+                "score": 0
             })
 
         return recent_comments
@@ -120,7 +137,8 @@ class CommentService:
             "post_id": comment.post_id,
             "parent_id": comment.parent_id,
             "created_at": comment.created_at,
-            "username": user.username
+            "username": user.username,
+            "score": 0
         }
 
     @staticmethod
@@ -129,8 +147,22 @@ class CommentService:
         if comment.user_id != user_id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
 
+        # Remove notifications tied to this comment tree to satisfy FK constraints.
+        comment_ids = {comment.id}
+        frontier = [comment.id]
+        while frontier:
+            child_ids = db.query(Comment.id).filter(Comment.parent_id.in_(frontier)).all()
+            frontier = [row[0] for row in child_ids if row[0] not in comment_ids]
+            comment_ids.update(frontier)
+
+        if comment_ids:
+            db.query(Notification).filter(Notification.comment_id.in_(comment_ids)).delete(
+                synchronize_session=False
+            )
+
         db.delete(comment)
         db.commit()
+        PostService.bump_feed_cache_version()
 
     @staticmethod
     def _create_notification_for_comment(db: Session, comment: Comment):

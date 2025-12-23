@@ -26,8 +26,10 @@ from routers import (
     posts_router,
     votes_router,
     comments_router,
+    comment_actions_router,
     notifications_router,
-    comments_feed_router
+    comments_feed_router,
+    comment_votes_router
 )
 
 # Include routers with prefixes
@@ -35,6 +37,8 @@ app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(posts_router, prefix="/posts", tags=["posts"])
 app.include_router(votes_router, prefix="/posts", tags=["votes"])
 app.include_router(comments_router, prefix="/posts", tags=["comments"])
+app.include_router(comment_actions_router, prefix="/comments", tags=["comments"])
+app.include_router(comment_votes_router, prefix="/comments", tags=["comments"])
 app.include_router(comments_feed_router, prefix="/comments", tags=["comments"])
 app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 

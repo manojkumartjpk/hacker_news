@@ -4,3 +4,4 @@ from .post import Post
 from .comment import Comment
 from .vote import Vote
 from .notification import Notification, NotificationType
+from .comment_vote import CommentVote

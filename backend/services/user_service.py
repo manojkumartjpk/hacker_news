@@ -7,7 +7,19 @@ from fastapi import HTTPException
 
 class UserService:
     @staticmethod
+    def _validate_password(password: str) -> None:
+        if len(password) < 9:
+            raise HTTPException(status_code=400, detail="Password must be at least 9 characters.")
+        if not any(char.isupper() for char in password):
+            raise HTTPException(status_code=400, detail="Password must include at least one uppercase letter.")
+        if not any(char.isdigit() for char in password):
+            raise HTTPException(status_code=400, detail="Password must include at least one number.")
+        if not any(not char.isalnum() for char in password):
+            raise HTTPException(status_code=400, detail="Password must include at least one special character.")
+
+    @staticmethod
     def create_user(db: Session, user: UserCreate) -> User:
+        UserService._validate_password(user.password)
         # Check if username or email already exists
         existing_user = db.query(User).filter(
             (User.username == user.username) | (User.email == user.email)

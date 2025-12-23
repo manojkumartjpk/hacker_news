@@ -77,7 +77,7 @@ export default function Submit() {
               <table border="0" cellPadding="0" cellSpacing="0" className="hn-form-table">
                 <tbody>
                   <tr>
-                    <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>title:</td>
+                    <td className="hn-form-label">Title:</td>
                     <td>
                       <input
                         type="text"
@@ -90,7 +90,7 @@ export default function Submit() {
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>url:</td>
+                    <td className="hn-form-label">URL:</td>
                     <td>
                       <input
                         type="url"
@@ -106,19 +106,19 @@ export default function Submit() {
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>text:</td>
+                    <td className="hn-form-label">Text:</td>
                     <td>
                       <textarea
                         name="text"
                         value={formData.text}
                         onChange={handleChange}
-                        placeholder="Text content (optional if URL is provided)"
-                        style={{ width: '100%', height: '100px' }}
+                        className="comment-box"
+                        placeholder="Text (optional if URL is provided)"
                       />
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>type:</td>
+                    <td className="hn-form-label">Type:</td>
                     <td>
                       <select
                         name="post_type"
@@ -141,7 +141,7 @@ export default function Submit() {
                         disabled={loading}
                         style={{ marginTop: '10px' }}
                       >
-                        {loading ? 'Submitting...' : 'submit'}
+                        {loading ? 'Submitting...' : 'Submit'}
                       </button>
                     </td>
                   </tr>

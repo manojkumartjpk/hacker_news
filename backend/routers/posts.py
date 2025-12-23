@@ -25,7 +25,8 @@ def get_posts(
     limit: int = Query(10, ge=1, le=100),
     sort: str = Query("new", regex="^(new|top|best)$"),
     post_type: str | None = Query(None, regex="^(story|ask|show|job)$"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
     posts = PostService.get_posts(db, skip=skip, limit=limit, sort=sort, post_type=post_type)
     return posts
@@ -35,12 +36,17 @@ def search_posts(
     q: str = Query("", min_length=0, max_length=200),
     skip: int = Query(0, ge=0),
     limit: int = Query(30, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
     return PostService.search_posts(db, query=q, skip=skip, limit=limit)
 
 @router.get("/{post_id}", response_model=Post)
-def get_post(post_id: int, db: Session = Depends(get_db)):
+def get_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+):
     return PostService.get_post(db, post_id)
 
 @router.put("/{post_id}", response_model=Post)
@@ -48,7 +54,8 @@ def update_post(
     post_id: int,
     post_update: PostUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
     return PostService.update_post(db, post_id, post_update, current_user.id)
 
@@ -56,7 +63,8 @@ def update_post(
 def delete_post(
     post_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
     PostService.delete_post(db, post_id, current_user.id)
     return {"message": "Post deleted successfully"}

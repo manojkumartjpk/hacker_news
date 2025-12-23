@@ -62,6 +62,7 @@ export default function Header() {
                   </b>
                   <a href="/" className={pathname === '/' && sort === 'new' ? 'topsel' : ''}>new</a> |{' '}
                   <a href="/?sort=top" className={pathname === '/' && sort === 'top' ? 'topsel' : ''}>past</a> |{' '}
+                  <a href="/?sort=best" className={pathname === '/' && sort === 'best' ? 'topsel' : ''}>best</a> |{' '}
                   <a href="/comments" className={pathname === '/comments' ? 'topsel' : ''}>comments</a> |{' '}
                   <a href="/ask" className={pathname === '/ask' ? 'topsel' : ''}>ask</a> |{' '}
                   <a href="/show" className={pathname === '/show' ? 'topsel' : ''}>show</a> |{' '}

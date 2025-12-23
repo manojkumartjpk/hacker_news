@@ -35,6 +35,7 @@ export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   login: (credentials) => api.post('/auth/login', credentials),
   usernameAvailable: (username) => api.get('/auth/username-available', { params: { username } }),
+  me: () => api.get('/auth/me'),
 };
 
 export const postsAPI = {
@@ -51,9 +52,10 @@ export const postsAPI = {
 export const commentsAPI = {
   getComments: (postId) => api.get(`/posts/${postId}/comments`),
   createComment: (postId, commentData) => api.post(`/posts/${postId}/comments`, commentData),
-  updateComment: (commentId, commentData) => api.put(`/posts/${commentId}`, commentData),
-  deleteComment: (commentId) => api.delete(`/posts/${commentId}`),
+  updateComment: (commentId, commentData) => api.put(`/comments/${commentId}`, commentData),
+  deleteComment: (commentId) => api.delete(`/comments/${commentId}`),
   getRecentComments: (params) => api.get('/comments/recent', { params }),
+  vote: (commentId, voteData) => api.post(`/comments/${commentId}/vote`, voteData),
 };
 
 export const notificationsAPI = {

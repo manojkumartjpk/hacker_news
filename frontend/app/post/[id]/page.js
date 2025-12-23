@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import CommentItem from '../../../components/CommentItem';
-import { postsAPI, commentsAPI } from '../../../lib/api';
+import { postsAPI, commentsAPI, authAPI } from '../../../lib/api';
 
 const safeHostname = (url) => {
   if (!url) return null;
@@ -40,10 +40,18 @@ export default function PostDetail() {
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const token = Cookies.get('access_token');
     setIsLoggedIn(!!token);
+    if (token) {
+      authAPI.me().then((res) => {
+        setCurrentUser(res.data);
+      }).catch(() => {
+        setCurrentUser(null);
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -202,8 +210,8 @@ export default function PostDetail() {
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    className="reply-textarea"
-                    placeholder="Add a comment..."
+                    className="comment-box"
+                    placeholder=""
                   />
                   <br />
                   <button
@@ -234,6 +242,8 @@ export default function PostDetail() {
                 key={comment.id}
                 comment={comment}
                 onReply={handleReply}
+                onRefresh={fetchComments}
+                currentUser={currentUser}
               />
             ))}
           </tbody>

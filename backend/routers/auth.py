@@ -15,7 +15,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 def register(
     user: UserCreate,
     db: Session = Depends(get_db),
-    rate_limited: bool = Depends(rate_limit(limit=5, window=3600))  # 5 registrations per hour
+    rate_limited: bool = Depends(rate_limit(limit=10, window=60))  # 5 registrations per minute
 ):
     return UserService.create_user(db, user)
 
@@ -41,7 +41,8 @@ def login(
 @router.get("/username-available")
 def username_available(
     username: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):
     user = UserService.get_user_by_username(db, username=username)
     return {"available": user is None}
@@ -58,3 +59,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+
+@router.get("/me", response_model=User)
+def get_me(
+    current_user: User = Depends(get_current_user),
+    rate_limited: bool = Depends(rate_limit(limit=60, window=60))
+):
+    return current_user

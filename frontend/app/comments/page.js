@@ -57,12 +57,9 @@ export default function CommentsPage() {
   return (
     <table border="0" cellPadding="0" cellSpacing="0">
       <tbody>
-        {comments.map((comment, index) => (
+        {comments.map((comment) => (
           <React.Fragment key={comment.id}>
             <tr className="athing">
-              <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
-                <span className="rank">{index + 1}.</span>
-              </td>
               <td className="default">
                 <div className="comhead">
                   <a href={`/user/${comment.username}`} className="hnuser">
@@ -73,8 +70,16 @@ export default function CommentsPage() {
                     <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
                   </span>
                   {' '}
+                  <a href={`/post/${comment.post_id}?id=${comment.id}`}>context</a>
+                  {' | '}
+                  {comment.parent_id && (
+                    <>
+                      <a href={`/post/${comment.post_id}?id=${comment.parent_id}`}>parent</a>
+                      {' | '}
+                    </>
+                  )}
                   <span className="on">
-                    | on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
+                    on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
                   </span>
                 </div>
                 <div className="comment">

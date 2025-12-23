@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, usePathname } from 'next/navigation';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import React from 'react';
 import { postsAPI } from '../lib/api';
+import Cookies from 'js-cookie';
 
 const POSTS_PER_PAGE = 30;
 
@@ -36,6 +37,7 @@ const commentsLabel = (count) => (count === 1 ? 'comment' : 'comments');
 export default function FeedList({ defaultSort = 'new', postType = null }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const router = useRouter();
   const sortParam = searchParams.get('sort') || defaultSort;
   const pageParam = Number.parseInt(searchParams.get('p') || '1', 10);
   const sort = ['new', 'top', 'best'].includes(sortParam) ? sortParam : defaultSort;
@@ -43,10 +45,16 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     fetchPosts();
   }, [sort, page, postType]);
+
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   const fetchPosts = async () => {
     try {
@@ -66,6 +74,11 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
   };
 
   const handleVote = async (postId, voteType) => {
+    if (!isLoggedIn) {
+      const nextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+      router.replace(`/login?next=${encodeURIComponent(nextUrl)}&vote=${voteType}&post=${postId}`);
+      return;
+    }
     try {
       await postsAPI.vote(postId, { vote_type: voteType });
       fetchPosts();
@@ -113,6 +126,16 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
                       }}
                     >
                       <div className="votearrow" title="upvote"></div>
+                    </a>
+                    <a
+                      id={`down_${post.id}`}
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleVote(post.id, -1);
+                      }}
+                    >
+                      <div className="votearrow downvote" title="downvote"></div>
                     </a>
                   </center>
                 </td>

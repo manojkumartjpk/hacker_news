@@ -18,6 +18,7 @@ class Comment(CommentBase):
     parent_id: Optional[int]
     created_at: datetime
     username: str  # Add username field
+    score: int
 
     class Config:
         from_attributes = True

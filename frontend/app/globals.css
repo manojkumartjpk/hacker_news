@@ -182,6 +182,11 @@ textarea {
   background-size: 10px;
 }
 
+.votearrow.downvote {
+  transform: rotate(180deg);
+  margin-top: 6px;
+}
+
 .athing td.title:first-child {
   padding-left: 2px;
 }
@@ -226,6 +231,10 @@ textarea {
   color: #828282;
 }
 
+.reply-label {
+  margin-bottom: 4px;
+}
+
 .hn-form-status {
   padding-left: 8px;
   font-size: 8pt;
@@ -266,6 +275,36 @@ textarea {
   font-size: 9pt;
   font-family: 'Verdana', 'Geneva', sans-serif;
   resize: vertical;
+}
+
+.comment-box {
+  width: 500px;
+  max-width: 100%;
+  height: 120px;
+  border: 1px solid #828282;
+  padding: 2px;
+  font-size: 10pt;
+  font-family: 'Verdana', 'Geneva', sans-serif;
+  resize: vertical;
+}
+
+@media (max-width: 480px) {
+  .hn-form-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .hn-form-label {
+    padding-right: 0;
+    padding-bottom: 2px;
+    display: block;
+  }
+
+  .hn-form-table input,
+  .hn-form-table textarea,
+  .hn-form-table select {
+    width: 100%;
+  }
 }
 
 .reply-buttons {
@@ -321,8 +360,21 @@ textarea {
   color: #000000;
 }
 
-.ind {
+/* indent handled inline in CommentItem */
+
+.comment-votelinks {
+  display: inline-flex;
   vertical-align: top;
+  width: 10px;
+  margin-right: 4px;
+  align-items: flex-start;
+}
+
+.comment-votelinks .votearrow {
+  margin: 2px 0 0;
+  width: 8px;
+  height: 8px;
+  background-size: 8px;
 }
 
 .hn-error {
