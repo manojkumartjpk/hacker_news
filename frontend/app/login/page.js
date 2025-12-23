@@ -42,7 +42,7 @@ export default function Login() {
     <table border="0" cellPadding="0" cellSpacing="0">
       <tbody>
         <tr>
-          <td className="title" style={{ paddingBottom: '10px' }}>Login</td>
+          <td className="title" style={{ paddingBottom: '10px' }}>login</td>
         </tr>
         <tr>
           <td>
@@ -53,29 +53,31 @@ export default function Login() {
             )}
 
             <form onSubmit={handleSubmit} className="hn-form">
-              <table border="0" cellPadding="0" cellSpacing="0">
+              <table border="0" cellPadding="0" cellSpacing="0" className="hn-form-table">
                 <tbody>
                   <tr>
-                    <td style={{ paddingRight: '10px' }}>username:</td>
+                    <td className="hn-form-label">username:</td>
                     <td>
                       <input
                         type="text"
                         name="username"
                         value={formData.username}
                         onChange={handleChange}
+                        title="Enter your username"
                         style={{ width: '200px' }}
                         required
                       />
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ paddingRight: '10px' }}>password:</td>
+                    <td className="hn-form-label">password:</td>
                     <td>
                       <input
                         type="password"
                         name="password"
                         value={formData.password}
                         onChange={handleChange}
+                        title="Enter your password"
                         style={{ width: '200px' }}
                         required
                       />
@@ -89,7 +91,7 @@ export default function Login() {
                         disabled={loading}
                         style={{ marginTop: '10px' }}
                       >
-                        {loading ? 'Logging in...' : 'login'}
+                        {loading ? 'logging in...' : 'login'}
                       </button>
                     </td>
                   </tr>
@@ -98,7 +100,7 @@ export default function Login() {
             </form>
 
             <div style={{ marginTop: '20px' }}>
-              <Link href="/register" style={{ color: '#ff6600' }}>Create account</Link>
+              <Link href="/register" style={{ color: '#ff6600' }}>create account</Link>
             </div>
           </td>
         </tr>

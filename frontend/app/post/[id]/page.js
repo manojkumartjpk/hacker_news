@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 import CommentItem from '../../../components/CommentItem';
 import { postsAPI, commentsAPI } from '../../../lib/api';
 
@@ -32,11 +33,18 @@ const pointsLabel = (score) => (score === 1 ? 'point' : 'points');
 
 export default function PostDetail() {
   const { id } = useParams();
+  const router = useRouter();
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -68,6 +76,11 @@ export default function PostDetail() {
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
+    const token = Cookies.get('access_token');
+    if (!token) {
+      router.replace(`/login?next=/post/${id}`);
+      return;
+    }
 
     setSubmittingComment(true);
     try {
@@ -82,6 +95,11 @@ export default function PostDetail() {
   };
 
   const handleReply = async (parentId, text) => {
+    const token = Cookies.get('access_token');
+    if (!token) {
+      router.replace(`/login?next=/post/${id}`);
+      return;
+    }
     try {
       await commentsAPI.createComment(id, { text, parent_id: parentId });
       fetchComments(); // Refresh comments
@@ -179,20 +197,28 @@ export default function PostDetail() {
         <tbody>
           <tr>
             <td>
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="reply-textarea"
-                placeholder="Add a comment..."
-              />
-              <br />
-              <button
-                onClick={handleCommentSubmit}
-                disabled={submittingComment}
-                className="comment-submit"
-              >
-                {submittingComment ? 'Posting...' : 'add comment'}
-              </button>
+              {isLoggedIn ? (
+                <>
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    className="reply-textarea"
+                    placeholder="Add a comment..."
+                  />
+                  <br />
+                  <button
+                    onClick={handleCommentSubmit}
+                    disabled={submittingComment}
+                    className="comment-submit"
+                  >
+                    {submittingComment ? 'Posting...' : 'add comment'}
+                  </button>
+                </>
+              ) : (
+                <div className="subtext">
+                  <a href={`/login?next=/post/${id}`}>Login</a> to add a comment.
+                </div>
+              )}
             </td>
           </tr>
         </tbody>

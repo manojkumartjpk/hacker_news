@@ -34,6 +34,7 @@ api.interceptors.response.use(
 export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   login: (credentials) => api.post('/auth/login', credentials),
+  usernameAvailable: (username) => api.get('/auth/username-available', { params: { username } }),
 };
 
 export const postsAPI = {

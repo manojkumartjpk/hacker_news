@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 import { postsAPI } from '../../lib/api';
 
 export default function Submit() {
@@ -13,7 +14,17 @@ export default function Submit() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [authChecked, setAuthChecked] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    if (!token) {
+      router.replace('/login?next=/submit');
+      return;
+    }
+    setAuthChecked(true);
+  }, [router]);
 
   const handleChange = (e) => {
     setFormData({
@@ -43,6 +54,10 @@ export default function Submit() {
       setLoading(false);
     }
   };
+
+  if (!authChecked) {
+    return null;
+  }
 
   return (
     <table border="0" cellPadding="0" cellSpacing="0">

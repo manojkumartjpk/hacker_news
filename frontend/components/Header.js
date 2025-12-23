@@ -69,7 +69,7 @@ export default function Header() {
                   <a href="/submit" className={pathname === '/submit' ? 'topsel' : ''}>submit</a>
                 </span>
               </td>
-              <td style={{ textAlign: 'right', paddingRight: '4px' }}>
+              <td style={{ textAlign: 'right', paddingRight: '4px' }} className="hn-nav-right">
                 <span className="pagetop">
                   {isLoggedIn ? (
                     <>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
 
 const timeAgo = (date) => {
   const now = new Date();
@@ -19,6 +20,12 @@ const timeAgo = (date) => {
 export default function CommentItem({ comment, depth = 0, onReply }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = Cookies.get('access_token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   const handleReply = async () => {
     if (!replyText.trim()) return;
@@ -41,42 +48,48 @@ export default function CommentItem({ comment, depth = 0, onReply }) {
               <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
             </span>
             {' '}
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setShowReplyForm(!showReplyForm);
-              }}
-            >
-              reply
-            </a>
+            {isLoggedIn ? (
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowReplyForm(!showReplyForm);
+                }}
+              >
+                reply
+              </a>
+            ) : (
+              <a href={`/login?next=/post/${comment.post_id}`}>reply</a>
+            )}
           </div>
           <div className="comment">
             {comment.text}
           </div>
 
-          <div className={`reply-form ${showReplyForm ? 'show' : ''}`}>
-            <textarea
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              className="reply-textarea"
-              placeholder="Write a reply..."
-            />
-            <div className="reply-buttons">
-              <button
-                onClick={handleReply}
-                className="reply-submit"
-              >
-                reply
-              </button>
-              <button
-                onClick={() => setShowReplyForm(false)}
-                className="reply-cancel"
-              >
-                cancel
-              </button>
+          {isLoggedIn && (
+            <div className={`reply-form ${showReplyForm ? 'show' : ''}`}>
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="reply-textarea"
+                placeholder="Write a reply..."
+              />
+              <div className="reply-buttons">
+                <button
+                  onClick={handleReply}
+                  className="reply-submit"
+                >
+                  reply
+                </button>
+                <button
+                  onClick={() => setShowReplyForm(false)}
+                  className="reply-cancel"
+                >
+                  cancel
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </td>
       </tr>
 

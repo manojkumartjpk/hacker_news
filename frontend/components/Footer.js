@@ -18,7 +18,7 @@ export default function Footer() {
               <tr>
                 <td style={{ backgroundColor: '#f6f6ef' }}>
                   <div style={{ borderTop: '2px solid #ff6600', height: '1px' }}></div>
-                  <div style={{ textAlign: 'center', padding: '8px 0' }} className="subtext">
+                  <div style={{ textAlign: 'center', padding: '8px 0' }} className="subtext hn-footer">
                     <a href="https://news.ycombinator.com/newsguidelines.html">Guidelines</a>
                     {' | '}
                     <a href="https://news.ycombinator.com/newsfaq.html">FAQ</a>
@@ -35,7 +35,7 @@ export default function Footer() {
                     {' | '}
                     <a href="mailto:hn@ycombinator.com">Contact</a>
                   </div>
-                  <div style={{ textAlign: 'center', paddingBottom: '10px' }} className="subtext">
+                  <div style={{ textAlign: 'center', paddingBottom: '10px' }} className="subtext hn-footer">
                     <form action="/search" method="GET">
                       Search:{' '}
                       <input type="text" name="q" size="17" />

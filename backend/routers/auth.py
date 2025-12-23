@@ -38,6 +38,14 @@ def login(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+@router.get("/username-available")
+def username_available(
+    username: str,
+    db: Session = Depends(get_db)
+):
+    user = UserService.get_user_by_username(db, username=username)
+    return {"available": user is None}
+
 # Dependency to get current user
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(

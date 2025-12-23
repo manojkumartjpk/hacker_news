@@ -90,6 +90,10 @@ textarea {
   color: #000000;
 }
 
+.hn-nav-right {
+  vertical-align: top;
+}
+
 .topsel a:link, .topsel a:visited {
   color: #ffffff;
 }
@@ -217,6 +221,23 @@ textarea {
   padding-bottom: 4px;
 }
 
+.hn-form-label {
+  padding-right: 10px;
+  color: #828282;
+}
+
+.hn-form-status {
+  padding-left: 8px;
+  font-size: 8pt;
+  vertical-align: middle;
+}
+
+.hn-form-status .hn-error,
+.hn-form-status .hn-success {
+  font-size: 8pt;
+  margin: 0;
+}
+
 .hn-form button {
   background-color: #f6f6ef;
   border: 1px solid #828282;
@@ -316,6 +337,11 @@ textarea {
   margin: 4px 0;
 }
 
+.subtext.hn-footer {
+  font-size: 7pt;
+  line-height: 12pt;
+}
+
 /* Responsive layout */
 @media (max-width: 1024px) {
   #hnmain {
@@ -329,6 +355,17 @@ textarea {
 
   .hncontent {
     padding: 4px 4px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .hn-nav-right .pagetop {
+    font-size: 8pt;
+    line-height: 10pt;
+  }
+
+  .hn-nav-right a {
+    display: inline-block;
   }
 }
 
