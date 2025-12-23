@@ -20,6 +20,7 @@ class PostUpdate(BaseModel):
 class Post(PostBase):
     id: int
     score: int
+    comment_count: int
     user_id: int
     created_at: datetime
     username: str  # Add username field

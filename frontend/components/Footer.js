@@ -36,7 +36,7 @@ export default function Footer() {
                     <a href="mailto:hn@ycombinator.com">Contact</a>
                   </div>
                   <div style={{ textAlign: 'center', paddingBottom: '10px' }} className="subtext">
-                    <form action="https://hn.algolia.com/" method="GET">
+                    <form action="/search" method="GET">
                       Search:{' '}
                       <input type="text" name="q" size="17" />
                     </form>

@@ -23,7 +23,7 @@ export default function RootLayout({ children }) {
             <Header />
             <tr style={{ height: '10px' }} />
             <tr>
-              <td>
+              <td className="hncontent">
                 {children}
               </td>
             </tr>

@@ -59,7 +59,7 @@ export default function Submit() {
             )}
 
             <form onSubmit={handleSubmit} className="hn-form">
-              <table border="0" cellPadding="0" cellSpacing="0">
+              <table border="0" cellPadding="0" cellSpacing="0" className="hn-form-table">
                 <tbody>
                   <tr>
                     <td style={{ paddingRight: '10px', verticalAlign: 'top' }}>title:</td>

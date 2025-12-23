@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { commentsAPI } from '../../lib/api';
 
@@ -48,39 +49,47 @@ export default function CommentsPage() {
     return <div className="hn-loading">Loading...</div>;
   }
 
+  if (!comments.length) {
+    const emptyMessage = page > 1 ? 'No more comments.' : 'No comments found.';
+    return <div className="hn-loading">{emptyMessage}</div>;
+  }
+
   return (
     <table border="0" cellPadding="0" cellSpacing="0">
       <tbody>
         {comments.map((comment, index) => (
-          <tr className="athing" key={comment.id}>
-            <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
-              <span className="rank">{index + 1}.</span>
-            </td>
-            <td className="default">
-              <div className="comhead">
-                <a href={`/user/${comment.username}`} className="hnuser">
-                  {comment.username}
-                </a>
-                {' '}
-                <span className="age" title={new Date(comment.created_at).toISOString()}>
-                  <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
-                </span>
-                {' '}
-                <span className="on">
-                  | on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
-                </span>
-              </div>
-              <div className="comment">
-                {comment.text}
-              </div>
-            </td>
-          </tr>
+          <React.Fragment key={comment.id}>
+            <tr className="athing">
+              <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+                <span className="rank">{index + 1}.</span>
+              </td>
+              <td className="default">
+                <div className="comhead">
+                  <a href={`/user/${comment.username}`} className="hnuser">
+                    {comment.username}
+                  </a>
+                  {' '}
+                  <span className="age" title={new Date(comment.created_at).toISOString()}>
+                    <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
+                  </span>
+                  {' '}
+                  <span className="on">
+                    | on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
+                  </span>
+                </div>
+                <div className="comment">
+                  {comment.text}
+                </div>
+              </td>
+            </tr>
+            <tr className="spacer" style={{ height: '10px' }}></tr>
+          </React.Fragment>
         ))}
         <tr className="spacer" style={{ height: '10px' }}></tr>
         <tr>
           <td colSpan="2"></td>
           <td className="title">
-            <a href={`/comments?p=${page + 1}`}>more</a>
+            <a href={`/comments?p=${page + 1}`}>More</a>
           </td>
         </tr>
       </tbody>

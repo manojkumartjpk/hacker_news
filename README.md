@@ -69,6 +69,13 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
+### Docker hot reload
+Create containers with live reload enabled (via `docker-compose.override.yml`):
+
+```bash
+docker compose up --build
+```
+
 ## Tests (Dockerized by default)
 
 Run all tests in Docker (backend + frontend):

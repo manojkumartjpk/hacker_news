@@ -75,9 +75,15 @@ class CommentService:
 
     @staticmethod
     def get_recent_comments(db: Session, skip: int = 0, limit: int = 30) -> list[dict]:
-        results = db.query(Comment, User.username, Post.title).join(User).join(Post).order_by(
-            Comment.created_at.desc()
-        ).offset(skip).limit(limit).all()
+        results = db.query(
+            Comment,
+            User.username,
+            Post.title
+        ).select_from(Comment).join(
+            User, Comment.user_id == User.id
+        ).join(
+            Post, Comment.post_id == Post.id
+        ).order_by(Comment.created_at.desc()).offset(skip).limit(limit).all()
 
         recent_comments = []
         for comment, username, post_title in results:

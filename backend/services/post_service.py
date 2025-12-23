@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from models import Post, User, Vote
+from sqlalchemy import desc, func
+from models import Post, User, Vote, Comment
 from schemas import PostCreate, PostUpdate
 from fastapi import HTTPException
 from cache import redis_get, redis_setex, redis_incr
@@ -64,6 +64,7 @@ class PostService:
             "text": db_post.text,
             "post_type": db_post.post_type,
             "score": db_post.score,
+            "comment_count": 0,
             "user_id": db_post.user_id,
             "created_at": db_post.created_at,
             "username": user.username
@@ -71,11 +72,23 @@ class PostService:
 
     @staticmethod
     def get_post(db: Session, post_id: int) -> dict:
-        result = db.query(Post, User.username).join(User).filter(Post.id == post_id).first()
+        comment_count_subq = db.query(
+            Comment.post_id.label("post_id"),
+            func.count(Comment.id).label("comment_count")
+        ).group_by(Comment.post_id).subquery()
+
+        result = db.query(
+            Post,
+            User.username,
+            comment_count_subq.c.comment_count
+        ).join(User).outerjoin(
+            comment_count_subq,
+            comment_count_subq.c.post_id == Post.id
+        ).filter(Post.id == post_id).first()
         if not result:
             raise HTTPException(status_code=404, detail="Post not found")
         
-        post, username = result
+        post, username, comment_count = result
         cached_score = redis_get(f"post:{post_id}:score")
         score = int(cached_score) if cached_score is not None else post.score
         if cached_score is None:
@@ -88,6 +101,7 @@ class PostService:
             "text": post.text,
             "post_type": post.post_type,
             "score": score,
+            "comment_count": comment_count or 0,
             "user_id": post.user_id,
             "created_at": post.created_at,
             "username": username
@@ -110,7 +124,19 @@ class PostService:
             except json.JSONDecodeError:
                 pass
 
-        query = db.query(Post, User.username).join(User)
+        comment_count_subq = db.query(
+            Comment.post_id.label("post_id"),
+            func.count(Comment.id).label("comment_count")
+        ).group_by(Comment.post_id).subquery()
+
+        query = db.query(
+            Post,
+            User.username,
+            comment_count_subq.c.comment_count
+        ).join(User).outerjoin(
+            comment_count_subq,
+            comment_count_subq.c.post_id == Post.id
+        )
         if post_type:
             query = query.filter(Post.post_type == post_type)
         if sort == "top":
@@ -124,7 +150,7 @@ class PostService:
         results = query.offset(skip).limit(limit).all()
 
         posts_with_username = []
-        for post, username in results:
+        for post, username, comment_count in results:
             cached_score = redis_get(f"post:{post.id}:score")
             score = int(cached_score) if cached_score is not None else post.score
             if cached_score is None:
@@ -140,6 +166,7 @@ class PostService:
                 "text": post.text,
                 "post_type": post.post_type,
                 "score": score,
+                "comment_count": comment_count or 0,
                 "user_id": post.user_id,
                 "created_at": post.created_at.isoformat() if hasattr(post.created_at, "isoformat") else post.created_at,
                 "username": username
@@ -216,6 +243,56 @@ class PostService:
             PostService.bump_feed_cache_version()
 
         return score
+
+    @staticmethod
+    def search_posts(db: Session, query: str, skip: int = 0, limit: int = 30) -> list[dict]:
+        if not query.strip():
+            return []
+
+        comment_count_subq = db.query(
+            Comment.post_id.label("post_id"),
+            func.count(Comment.id).label("comment_count")
+        ).group_by(Comment.post_id).subquery()
+
+        like_term = f"%{query}%"
+        search_query = db.query(
+            Post,
+            User.username,
+            comment_count_subq.c.comment_count
+        ).join(User).outerjoin(
+            comment_count_subq,
+            comment_count_subq.c.post_id == Post.id
+        ).filter(
+            (Post.title.ilike(like_term)) |
+            (Post.url.ilike(like_term)) |
+            (Post.text.ilike(like_term))
+        ).order_by(desc(Post.created_at)).offset(skip).limit(limit)
+
+        results = search_query.all()
+        posts_with_username = []
+        for post, username, comment_count in results:
+            cached_score = redis_get(f"post:{post.id}:score")
+            score = int(cached_score) if cached_score is not None else post.score
+            if cached_score is None:
+                redis_setex(
+                    f"post:{post.id}:score",
+                    PostService.FEED_CACHE_TTL_SECONDS,
+                    str(post.score)
+                )
+            posts_with_username.append({
+                "id": post.id,
+                "title": post.title,
+                "url": post.url,
+                "text": post.text,
+                "post_type": post.post_type,
+                "score": score,
+                "comment_count": comment_count or 0,
+                "user_id": post.user_id,
+                "created_at": post.created_at.isoformat() if hasattr(post.created_at, "isoformat") else post.created_at,
+                "username": username
+            })
+
+        return posts_with_username
 
     @staticmethod
     def get_cached_score(post_id: int) -> int:
