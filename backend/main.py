@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -5,16 +6,28 @@ import os
 # Import database and create tables on startup
 from database import engine, Base
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
 app = FastAPI(
     title="Hacker News Clone API",
     description="A REST API for a Hacker News-style application",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
+
+allowed_origins = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:3000,http://frontend:3000"
+).split(",")
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for Docker environment
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,11 +54,6 @@ app.include_router(comment_actions_router, prefix="/comments", tags=["comments"]
 app.include_router(comment_votes_router, prefix="/comments", tags=["comments"])
 app.include_router(comments_feed_router, prefix="/comments", tags=["comments"])
 app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
-
-# Create tables on startup
-@app.on_event("startup")
-def create_tables():
-    Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 def read_root():

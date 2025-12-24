@@ -8,16 +8,61 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    environment:
-      - POSTGRES_URL=postgresql://user:password@postgres:5432/hackernews_test
-      - REDIS_URL=redis://redis:6379
+    env_file:
+      - ./backend/.env.test
     command: pytest
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env.test
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000').read()"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   frontend-tests:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     command: npm test
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>{if(!r.ok) process.exit(1);}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  e2e-tests:
+    image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    working_dir: /app/frontend
+    depends_on:
+      frontend:
+        condition: service_healthy
+    environment:
+      - E2E_BASE_URL=http://frontend:3000
+      - E2E_API_BASE_URL=http://backend:8000
+    volumes:
+      - ./:/app
+    command: ["bash", "-lc", "npm install && npx playwright test"]
 
   postgres:
     image: postgres:15

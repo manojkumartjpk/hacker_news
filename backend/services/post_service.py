@@ -18,7 +18,10 @@ class PostService:
     def _get_feed_cache_version() -> int:
         cached = redis_get("feed:version")
         if cached is None:
-            return 1
+            initial = redis_incr("feed:version")
+            if initial is None:
+                return 1
+            return int(initial)
         try:
             return int(cached)
         except ValueError:

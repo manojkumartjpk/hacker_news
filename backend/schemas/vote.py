@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class VoteBase(BaseModel):
     vote_type: int  # 1 or -1
@@ -11,5 +11,4 @@ class Vote(VoteBase):
     user_id: int
     post_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

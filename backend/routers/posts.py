@@ -24,8 +24,8 @@ def create_post(
 def get_posts(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    sort: str = Query("new", regex="^(new|top|best)$"),
-    post_type: str | None = Query(None, regex="^(story|ask|show|job)$"),
+    sort: str = Query("new", pattern="^(new|top|best)$"),
+    post_type: str | None = Query(None, pattern="^(story|ask|show|job)$"),
     db: Session = Depends(get_db),
     rate_limited: bool = Depends(rate_limit(limit=10, window=60))
 ):

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 from models import NotificationType
@@ -17,5 +17,4 @@ class Notification(NotificationBase):
     created_at: datetime
     actor_username: str  # Add actor username
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

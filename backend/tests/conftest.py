@@ -9,9 +9,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-TEST_DB_PATH = Path(__file__).resolve().parent / "test.db"
-
-os.environ.setdefault("POSTGRES_URL", f"sqlite:///{TEST_DB_PATH}")
+os.environ.setdefault("POSTGRES_URL", "postgresql://user:password@postgres:5432/hackernews_test")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
 
 from main import app  # noqa: E402
@@ -57,9 +55,6 @@ def fake_redis(monkeypatch):
 
 @pytest.fixture()
 def client():
-    if TEST_DB_PATH.exists():
-        TEST_DB_PATH.unlink()
-
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
@@ -67,15 +62,10 @@ def client():
         yield test_client
 
     Base.metadata.drop_all(bind=engine)
-    if TEST_DB_PATH.exists():
-        TEST_DB_PATH.unlink()
 
 
 @pytest.fixture()
 def db_session():
-    if TEST_DB_PATH.exists():
-        TEST_DB_PATH.unlink()
-
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
@@ -84,8 +74,6 @@ def db_session():
     finally:
         db.close()
         Base.metadata.drop_all(bind=engine)
-        if TEST_DB_PATH.exists():
-            TEST_DB_PATH.unlink()
 
 
 @pytest.fixture()

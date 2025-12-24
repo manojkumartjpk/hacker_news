@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 import os
 
@@ -10,10 +11,13 @@ class Base(DeclarativeBase):
     pass
 
 connect_args = {}
+engine_kwargs = {}
 if POSTGRES_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
+    if ":memory:" in POSTGRES_URL:
+        engine_kwargs["poolclass"] = StaticPool
 
-engine = create_engine(POSTGRES_URL, connect_args=connect_args)
+engine = create_engine(POSTGRES_URL, connect_args=connect_args, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Import all models to ensure they are registered with SQLAlchemy

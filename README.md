@@ -7,9 +7,13 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 - User registration and authentication (JWT)
 - Post submission (URL or text posts)
 - Upvoting/downvoting posts
+- Comment voting
 - Threaded comments
 - Notifications for comments and replies
 - Rate limiting
+- Feed filters (story/ask/show/job) and sorting (new/top/best)
+- Post search
+- Recent comments feed
 - Responsive UI
 
 ## Tech Stack
@@ -89,6 +93,54 @@ Skip Docker locally (runs tests directly on your machine):
 ```bash
 USE_DOCKER_TESTS=0 ./scripts/run-tests.sh
 ```
+
+### Backend unit tests
+```bash
+PYTEST_MARK=unit ./scripts/run-tests.sh
+```
+
+### Backend integration tests (e2e flows)
+```bash
+PYTEST_MARK=integration ./scripts/run-tests.sh
+```
+
+### Frontend tests
+```bash
+USE_DOCKER_TESTS=0 (cd frontend && npm test)
+```
+
+### Browser e2e tests (frontend + backend)
+Dockerized:
+```bash
+RUN_E2E=1 ./scripts/run-tests.sh
+```
+
+Dockerized (only e2e):
+```bash
+ONLY_E2E=1 ./scripts/run-tests.sh
+```
+
+Local (requires running frontend + backend separately):
+```bash
+USE_DOCKER_TESTS=0 RUN_E2E=1 E2E_BASE_URL=http://localhost:3000 ./scripts/run-tests.sh
+```
+
+If your API is not on localhost, set `E2E_API_BASE_URL` (defaults to `http://localhost:8000`).
+
+If running locally for the first time, install Playwright browsers:
+```bash
+cd frontend
+npx playwright install
+```
+
+### Coverage (backend + frontend)
+```bash
+COVERAGE=1 ./scripts/run-tests.sh
+```
+
+Notes:
+- Coverage output is printed to the console when running in Docker.
+- To generate host-side coverage artifacts (XML/HTML), run with `USE_DOCKER_TESTS=0`.
 
 ## API Endpoints
 
