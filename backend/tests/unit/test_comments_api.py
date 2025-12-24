@@ -1,0 +1,109 @@
+import pytest
+
+
+@pytest.mark.unit
+def test_create_comments_threaded(client, auth_headers):
+    post_response = client.post(
+        "/posts/",
+        json={"title": "Threaded post", "text": "Body", "url": None},
+        headers=auth_headers,
+    )
+    post_id = post_response.json()["id"]
+
+    comment_response = client.post(
+        f"/posts/{post_id}/comments",
+        json={"text": "Top level comment", "parent_id": None},
+        headers=auth_headers,
+    )
+    assert comment_response.status_code == 200
+    comment_id = comment_response.json()["id"]
+
+    reply_response = client.post(
+        f"/posts/{post_id}/comments",
+        json={"text": "Reply", "parent_id": comment_id},
+        headers=auth_headers,
+    )
+    assert reply_response.status_code == 200
+
+    thread_response = client.get(f"/posts/{post_id}/comments")
+    assert thread_response.status_code == 200
+    thread = thread_response.json()
+    assert len(thread) == 1
+    assert thread[0]["replies"][0]["text"] == "Reply"
+
+
+@pytest.mark.unit
+def test_update_comment_requires_owner(client, auth_headers, make_user):
+    post_response = client.post(
+        "/posts/",
+        json={"title": "Editable post", "text": "Body", "url": None},
+        headers=auth_headers,
+    )
+    post_id = post_response.json()["id"]
+
+    comment_response = client.post(
+        f"/posts/{post_id}/comments",
+        json={"text": "Original", "parent_id": None},
+        headers=auth_headers,
+    )
+    comment_id = comment_response.json()["id"]
+
+    other_user = make_user(username="gina")
+    other_login = client.post(
+        "/auth/login",
+        json={"username": other_user["username"], "password": other_user["password"]},
+    )
+    other_headers = {"Authorization": f"Bearer {other_login.json()['access_token']}"}
+
+    update_response = client.put(
+        f"/comments/{comment_id}",
+        json={"text": "Hacked"},
+        headers=other_headers,
+    )
+    assert update_response.status_code == 403
+    assert update_response.json()["detail"] == "Not authorized to update this comment"
+
+
+@pytest.mark.unit
+def test_vote_on_comment(client, auth_headers):
+    post_response = client.post(
+        "/posts/",
+        json={"title": "Comment vote post", "text": "Body", "url": None},
+        headers=auth_headers,
+    )
+    post_id = post_response.json()["id"]
+
+    comment_response = client.post(
+        f"/posts/{post_id}/comments",
+        json={"text": "Vote me", "parent_id": None},
+        headers=auth_headers,
+    )
+    comment_id = comment_response.json()["id"]
+
+    vote_response = client.post(
+        f"/comments/{comment_id}/vote",
+        json={"vote_type": 1},
+        headers=auth_headers,
+    )
+    assert vote_response.status_code == 200
+    assert vote_response.json()["vote_type"] == 1
+
+
+@pytest.mark.unit
+def test_recent_comments(client, auth_headers):
+    post_response = client.post(
+        "/posts/",
+        json={"title": "Recent comments post", "text": "Body", "url": None},
+        headers=auth_headers,
+    )
+    post_id = post_response.json()["id"]
+
+    client.post(
+        f"/posts/{post_id}/comments",
+        json={"text": "Recent comment", "parent_id": None},
+        headers=auth_headers,
+    )
+
+    response = client.get("/comments/recent", params={"limit": 10})
+    assert response.status_code == 200
+    assert len(response.json()) >= 1
