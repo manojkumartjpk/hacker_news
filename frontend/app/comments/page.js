@@ -4,26 +4,15 @@ import { useState, useEffect } from 'react';
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { commentsAPI } from '../../lib/api';
+import { timeAgo } from '../../lib/format';
+import { getErrorMessage } from '../../lib/errors';
 
 const COMMENTS_PER_PAGE = 30;
-
-const timeAgo = (date) => {
-  const now = new Date();
-  const commentDate = new Date(date);
-  const diffInSeconds = Math.floor((now - commentDate) / 1000);
-
-  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} hours ago`;
-  const diffInDays = Math.floor(diffInHours / 24);
-  return `${diffInDays} days ago`;
-};
 
 export default function CommentsPage() {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const searchParams = useSearchParams();
   const pageParam = Number.parseInt(searchParams.get('p') || '1', 10);
   const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
@@ -35,11 +24,12 @@ export default function CommentsPage() {
   const fetchComments = async () => {
     try {
       setLoading(true);
+      setError('');
       const skip = (page - 1) * COMMENTS_PER_PAGE;
       const response = await commentsAPI.getRecentComments({ limit: COMMENTS_PER_PAGE, skip });
       setComments(response.data);
     } catch (error) {
-      console.error('Failed to fetch comments:', error);
+      setError(getErrorMessage(error, 'Failed to fetch comments.'));
     } finally {
       setLoading(false);
     }
@@ -47,6 +37,10 @@ export default function CommentsPage() {
 
   if (loading) {
     return <div className="hn-loading">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="hn-error">{error}</div>;
   }
 
   if (!comments.length) {

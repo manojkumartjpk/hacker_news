@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { notificationsAPI } from '../../lib/api';
+import { timeAgo } from '../../lib/format';
+import { getErrorMessage } from '../../lib/errors';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchNotifications();
@@ -15,10 +17,11 @@ export default function Notifications() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await notificationsAPI.getNotifications({ limit: 50 });
       setNotifications(response.data);
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      setError(getErrorMessage(error, 'Failed to fetch notifications.'));
     } finally {
       setLoading(false);
     }
@@ -31,26 +34,16 @@ export default function Notifications() {
         n.id === id ? { ...n, read: true } : n
       ));
     } catch (error) {
-      console.error('Failed to mark as read:', error);
+      setError(getErrorMessage(error, 'Failed to mark notification as read.'));
     }
-  };
-
-  const timeAgo = (date) => {
-    const now = new Date();
-    const notifDate = new Date(date);
-    const diffInSeconds = Math.floor((now - notifDate) / 1000);
-
-    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} days ago`;
   };
 
   if (loading) {
     return <div className="hn-loading">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="hn-error">{error}</div>;
   }
 
   return (

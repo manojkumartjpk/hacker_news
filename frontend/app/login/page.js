@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { authAPI } from '../../lib/api';
+import { getErrorMessage } from '../../lib/errors';
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -57,7 +58,7 @@ export default function Login() {
         router.push('/');
       }
     } catch (error) {
-      setError(error.response?.data?.detail || 'Login failed. Please try again.');
+      setError(getErrorMessage(error, 'Login failed. Please try again.'));
     } finally {
       setLoading(false);
     }

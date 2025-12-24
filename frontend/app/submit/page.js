@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { postsAPI } from '../../lib/api';
+import { getErrorMessage } from '../../lib/errors';
 
 export default function Submit() {
   const [formData, setFormData] = useState({
@@ -49,7 +50,7 @@ export default function Submit() {
       await postsAPI.createPost(formData);
       router.push('/');
     } catch (error) {
-      setError(error.response?.data?.detail || 'Failed to submit post. Please try again.');
+      setError(getErrorMessage(error, 'Failed to submit post. Please try again.'));
     } finally {
       setLoading(false);
     }

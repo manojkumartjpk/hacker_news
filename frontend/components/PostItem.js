@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { postsAPI } from '../lib/api';
+import { safeHostname, timeAgo } from '../lib/format';
+import { getErrorMessage } from '../lib/errors';
 
 export default function PostItem({ post, onVote }) {
   const [userVote, setUserVote] = useState(0);
   const [score, setScore] = useState(post.score);
+  const hostname = safeHostname(post.url);
 
   useEffect(() => {
     fetchUserVote();
@@ -29,22 +32,8 @@ export default function PostItem({ post, onVote }) {
       setScore(prev => prev + (voteType === 1 ? 1 : -1) - (userVote === 1 ? 1 : userVote === -1 ? -1 : 0));
       if (onVote) onVote();
     } catch (error) {
-      alert('Failed to vote. Please try again.');
+      alert(getErrorMessage(error, 'Failed to vote. Please try again.'));
     }
-  };
-
-  const timeAgo = (date) => {
-    const now = new Date();
-    const postDate = new Date(date);
-    const diffInSeconds = Math.floor((now - postDate) / 1000);
-
-    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} days ago`;
   };
 
   return (
@@ -73,9 +62,9 @@ export default function PostItem({ post, onVote }) {
             </Link>
           )}
         </span>
-        {post.url && (
+        {post.url && hostname && (
           <span className="hn-post-domain">
-            ({new URL(post.url).hostname})
+            ({hostname})
           </span>
         )}
       </div>

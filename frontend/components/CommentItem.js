@@ -4,20 +4,8 @@ import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import { commentsAPI } from '../lib/api';
-
-const timeAgo = (date) => {
-  const now = new Date();
-  const commentDate = new Date(date);
-  const diffInSeconds = Math.floor((now - commentDate) / 1000);
-
-  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} hours ago`;
-  const diffInDays = Math.floor(diffInHours / 24);
-  return `${diffInDays} days ago`;
-};
+import { timeAgo } from '../lib/format';
+import { getErrorMessage } from '../lib/errors';
 
 const MAX_NESTING = 5; // Prevent runaway nesting in deep reply threads.
 
@@ -52,7 +40,7 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
         onRefresh();
       }
     } catch (error) {
-      alert('Failed to update comment. Please try again.');
+      alert(getErrorMessage(error, 'Failed to update comment. Please try again.'));
     }
   };
 
@@ -64,7 +52,7 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
         onRefresh();
       }
     } catch (error) {
-      alert('Failed to delete comment. Please try again.');
+      alert(getErrorMessage(error, 'Failed to delete comment. Please try again.'));
     }
   };
 
@@ -85,7 +73,7 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
                 try {
                   await commentsAPI.vote(comment.id, { vote_type: 1 });
                 } catch (error) {
-                  alert('Failed to vote. Please try again.');
+                  alert(getErrorMessage(error, 'Failed to vote. Please try again.'));
                 }
               }}
             >

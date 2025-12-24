@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '../../lib/api';
+import { getErrorMessage } from '../../lib/errors';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -45,7 +46,7 @@ export default function Register() {
         router.push('/login');
       }, 1200);
     } catch (error) {
-      setError(error.response?.data?.detail || 'Registration failed. Please try again.');
+      setError(getErrorMessage(error, 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }

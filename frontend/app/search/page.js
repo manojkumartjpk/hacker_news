@@ -4,34 +4,10 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import React from 'react';
 import { postsAPI } from '../../lib/api';
+import { commentsLabel, pointsLabel, safeHostname, timeAgo } from '../../lib/format';
+import { getErrorMessage } from '../../lib/errors';
 
 const RESULTS_PER_PAGE = 30;
-
-const safeHostname = (url) => {
-  if (!url) return null;
-  try {
-    return new URL(url).hostname;
-  } catch (error) {
-    return null;
-  }
-};
-
-const timeAgo = (date) => {
-  const now = new Date();
-  const postDate = new Date(date);
-  const diffInSeconds = Math.floor((now - postDate) / 1000);
-
-  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} hours ago`;
-  const diffInDays = Math.floor(diffInHours / 24);
-  return `${diffInDays} days ago`;
-};
-
-const pointsLabel = (score) => (score === 1 ? 'point' : 'points');
-const commentsLabel = (count) => (count === 1 ? 'comment' : 'comments');
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -41,6 +17,7 @@ export default function SearchPage() {
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchResults();
@@ -54,11 +31,12 @@ export default function SearchPage() {
     }
     try {
       setLoading(true);
+      setError('');
       const skip = (page - 1) * RESULTS_PER_PAGE;
       const response = await postsAPI.searchPosts({ q: query, skip, limit: RESULTS_PER_PAGE });
       setPosts(response.data);
     } catch (error) {
-      console.error('Failed to fetch search results:', error);
+      setError(getErrorMessage(error, 'Failed to fetch search results.'));
     } finally {
       setLoading(false);
     }
@@ -68,16 +46,21 @@ export default function SearchPage() {
     return <div className="hn-loading">Loading...</div>;
   }
 
+  if (error) {
+    return <div className="hn-error">{error}</div>;
+  }
+
   if (!posts.length) {
     return <div className="hn-loading">No results found.</div>;
   }
 
   const handleVote = async (postId, voteType) => {
     try {
+      setError('');
       await postsAPI.vote(postId, { vote_type: voteType });
       fetchResults();
     } catch (error) {
-      alert('Failed to vote. Please try again.');
+      setError(getErrorMessage(error, 'Failed to vote. Please try again.'));
     }
   };
 

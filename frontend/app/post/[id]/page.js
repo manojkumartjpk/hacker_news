@@ -5,33 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import CommentItem from '../../../components/CommentItem';
 import { postsAPI, commentsAPI, authAPI } from '../../../lib/api';
-
-// Extract a display-friendly hostname without throwing on invalid URLs.
-const safeHostname = (url) => {
-  if (!url) return null;
-  try {
-    return new URL(url).hostname;
-  } catch (error) {
-    return null;
-  }
-};
-
-// Humanize timestamps for post metadata.
-const timeAgo = (date) => {
-  const now = new Date();
-  const postDate = new Date(date);
-  const diffInSeconds = Math.floor((now - postDate) / 1000);
-
-  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} hours ago`;
-  const diffInDays = Math.floor(diffInHours / 24);
-  return `${diffInDays} days ago`;
-};
-
-const pointsLabel = (score) => (score === 1 ? 'point' : 'points');
+import { pointsLabel, safeHostname, timeAgo } from '../../../lib/format';
+import { getErrorMessage } from '../../../lib/errors';
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -43,6 +18,8 @@ export default function PostDetail() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [postError, setPostError] = useState('');
+  const [commentsError, setCommentsError] = useState('');
 
   useEffect(() => {
     // Read the auth token on the client to decide if we can show comment controls.
@@ -67,19 +44,23 @@ export default function PostDetail() {
 
   const fetchPost = async () => {
     try {
+      setPostError('');
       const response = await postsAPI.getPost(id);
       setPost(response.data);
     } catch (error) {
-      console.error('Failed to fetch post:', error);
+      setPost(null);
+      setPostError(getErrorMessage(error, 'Failed to fetch post.'));
     }
   };
 
   const fetchComments = async () => {
     try {
+      setCommentsError('');
       const response = await commentsAPI.getComments(id);
       setComments(response.data);
     } catch (error) {
-      console.error('Failed to fetch comments:', error);
+      setComments([]);
+      setCommentsError(getErrorMessage(error, 'Failed to fetch comments.'));
     } finally {
       setLoading(false);
     }
@@ -101,7 +82,7 @@ export default function PostDetail() {
       setCommentText('');
       fetchComments(); // Refresh comments
     } catch (error) {
-      alert('Failed to post comment. Please try again.');
+      setCommentsError(getErrorMessage(error, 'Failed to post comment. Please try again.'));
     } finally {
       setSubmittingComment(false);
     }
@@ -117,7 +98,7 @@ export default function PostDetail() {
       await commentsAPI.createComment(id, { text, parent_id: parentId });
       fetchComments(); // Refresh comments
     } catch (error) {
-      alert('Failed to post reply. Please try again.');
+      setCommentsError(getErrorMessage(error, 'Failed to post reply. Please try again.'));
     }
   };
 
@@ -126,12 +107,16 @@ export default function PostDetail() {
       await postsAPI.vote(id, { vote_type: voteType });
       fetchPost();
     } catch (error) {
-      alert('Failed to vote. Please try again.');
+      setPostError(getErrorMessage(error, 'Failed to vote. Please try again.'));
     }
   };
 
   if (loading) {
     return <div className="hn-loading">Loading...</div>;
+  }
+
+  if (postError) {
+    return <div className="hn-error">{postError}</div>;
   }
 
   if (!post) {
@@ -205,6 +190,12 @@ export default function PostDetail() {
       </table>
 
       <br />
+
+      {commentsError && (
+        <div className="hn-error">
+          {commentsError}
+        </div>
+      )}
 
       <table border="0" cellPadding="0" cellSpacing="0">
         <tbody>

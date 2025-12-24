@@ -8,6 +8,20 @@ from fastapi import HTTPException
 class CommentService:
     @staticmethod
     def create_comment(db: Session, comment: CommentCreate, post_id: int, user_id: int) -> dict:
+        if not comment.text or not comment.text.strip():
+            raise HTTPException(status_code=400, detail="Comment text is required")
+
+        post = db.query(Post).filter(Post.id == post_id).first()
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        if comment.parent_id is not None:
+            parent_comment = db.query(Comment).filter(Comment.id == comment.parent_id).first()
+            if not parent_comment:
+                raise HTTPException(status_code=404, detail="Parent comment not found")
+            if parent_comment.post_id != post_id:
+                raise HTTPException(status_code=400, detail="Parent comment does not belong to this post")
+
         db_comment = Comment(
             text=comment.text,
             user_id=user_id,
@@ -45,6 +59,10 @@ class CommentService:
 
     @staticmethod
     def get_comments_for_post(db: Session, post_id: int) -> list[dict]:
+        post = db.query(Post).filter(Post.id == post_id).first()
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+
         # Precompute scores per comment so we can join them in one query.
         comment_score_subq = db.query(
             CommentVote.comment_id.label("comment_id"),
@@ -170,6 +188,9 @@ class CommentService:
         # Get the post and user info
         post = db.query(Post).filter(Post.id == comment.post_id).first()
         actor = db.query(User).filter(User.id == comment.user_id).first()
+
+        if not post or not actor:
+            return
         
         # Notify post author if someone comments on their post
         if comment.user_id != post.user_id:
@@ -186,6 +207,8 @@ class CommentService:
         # Notify parent comment author if it's a reply
         if comment.parent_id:
             parent_comment = db.query(Comment).filter(Comment.id == comment.parent_id).first()
+            if not parent_comment:
+                return
             if comment.user_id != parent_comment.user_id:
                 notification = Notification(
                     user_id=parent_comment.user_id,
