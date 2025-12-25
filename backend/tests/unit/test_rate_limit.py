@@ -32,9 +32,9 @@ def test_rate_limit_tracks_ip(monkeypatch):
     monkeypatch.setattr(rate_limit, "redis_incr", redis_incr)
     monkeypatch.setattr(rate_limit, "redis_expire", redis_expire)
 
-    dependency = rate_limit.rate_limit(limit=2, window=60)
-    dependency(_Request(), None)
-    dependency(_Request(), None)
+    dependency = rate_limit.rate_limit()
+    for _ in range(20):
+        dependency(_Request(), None)
     with pytest.raises(HTTPException):
         dependency(_Request(), None)
 
@@ -57,10 +57,12 @@ def test_rate_limit_tracks_user(monkeypatch):
     monkeypatch.setattr(rate_limit, "redis_incr", redis_incr)
     monkeypatch.setattr(rate_limit, "redis_expire", redis_expire)
 
-    dependency = rate_limit.rate_limit(limit=1, window=60)
+    dependency = rate_limit.rate_limit()
     user = type("User", (), {"id": 42})()
-    dependency(_Request(), user)
-    dependency(_Request(), user)
+    for _ in range(120):
+        dependency(_Request(), user)
+    with pytest.raises(HTTPException):
+        dependency(_Request(), user)
 
 
 @pytest.mark.unit
@@ -78,5 +80,5 @@ def test_rate_limit_handles_bad_counter(monkeypatch):
     monkeypatch.setattr(rate_limit, "redis_incr", redis_incr)
     monkeypatch.setattr(rate_limit, "redis_expire", redis_expire)
 
-    dependency = rate_limit.rate_limit(limit=1, window=60)
+    dependency = rate_limit.rate_limit()
     dependency(_Request(), None)

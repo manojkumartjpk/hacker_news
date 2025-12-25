@@ -14,7 +14,7 @@ router = APIRouter()
 def register(
     user: UserCreate,
     db: Session = Depends(get_db),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))  # 10 registrations per minute
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Register a new user account."""
     return UserService.create_user(db, user)
@@ -23,7 +23,7 @@ def register(
 def login(
     user_credentials: UserLogin,
     db: Session = Depends(get_db),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))  # 10 login attempts per minute
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Authenticate a user and return a bearer token."""
     user = UserService.authenticate_user(db, user_credentials.username, user_credentials.password)
@@ -43,7 +43,7 @@ def login(
 def username_available(
     username: str,
     db: Session = Depends(get_db),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Check if a username is available for registration."""
     user = UserService.get_user_by_username(db, username=username)
@@ -53,7 +53,7 @@ def username_available(
 @router.get("/me", response_model=User)
 def get_me(
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit(limit=60, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Return the currently authenticated user."""
     return current_user

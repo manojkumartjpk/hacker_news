@@ -39,6 +39,12 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 - **Redis**: Caching for feed data, vote scores, rate limiting
 - **REST API**: Clean separation between routers, services, models, and schemas
 
+## Caching and Rate Limiting
+
+- **Feed cache**: Redis caches feed responses for 5 minutes (TTL). Cache is invalidated on new posts and new comments via a feed version bump.
+- **Score cache**: Post scores are cached in Redis for 5 minutes (TTL).
+- **Rate limits**: Authenticated requests are limited to 120 requests/minute per user. Unauthenticated requests are limited to 20 requests/minute per IP. Limits apply to endpoints using the rate limit dependency.
+
 ## Setup
 
 1. Ensure Docker and Docker Compose are installed.

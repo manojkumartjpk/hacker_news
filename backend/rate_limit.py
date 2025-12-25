@@ -3,12 +3,11 @@ from auth.deps import get_current_user_optional
 from models import User
 from cache import redis_get, redis_incr, redis_expire
 
-def rate_limit(limit: int = 100, window: int = 60):
-    """
-    Rate limiting dependency using Redis.
-    limit: number of requests allowed
-    window: time window in seconds
-    """
+def rate_limit():
+    """Rate limiting dependency using Redis."""
+    limit_user = 120
+    limit_ip = 20
+    window = 60
     def dependency(
         request: Request,
         current_user: User | None = Depends(get_current_user_optional)
@@ -16,11 +15,11 @@ def rate_limit(limit: int = 100, window: int = 60):
         # Use user_id for authenticated requests, fallback to IP for guests.
         if current_user:
             key = f"rate_limit:user:{current_user.id}"
-            effective_limit = 60
+            effective_limit = limit_user
         else:
             client_ip = request.client.host if request.client else "unknown"
             key = f"rate_limit:ip:{client_ip}"
-            effective_limit = limit
+            effective_limit = limit_ip
 
         # Get current count
         current = redis_get(key)

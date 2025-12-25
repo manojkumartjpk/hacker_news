@@ -3,9 +3,12 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
+from schemas import TokenData
 
 # JWT settings
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")  # In production, use a secure key
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is required")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -38,6 +41,7 @@ def verify_token(token: str, credentials_exception):
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        return {"username": username}
+        token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
+    return token_data

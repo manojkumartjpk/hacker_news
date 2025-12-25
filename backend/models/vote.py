@@ -1,9 +1,10 @@
-from sqlalchemy import Integer, DateTime, ForeignKey, func
+from sqlalchemy import Integer, DateTime, ForeignKey, func, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
 class Vote(Base):
     __tablename__ = "votes"
+    __table_args__ = (UniqueConstraint("user_id", "post_id", name="uq_votes_user_post"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

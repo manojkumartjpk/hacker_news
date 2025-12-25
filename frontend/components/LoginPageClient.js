@@ -35,6 +35,7 @@ export default function LoginPageClient() {
       const response = await authAPI.login(formData);
       Cookies.set('access_token', response.data.access_token, { expires: 1/24 }); // 1 hour
       const next = searchParams.get('next');
+      const safeNext = getSafeNext(next);
       const vote = searchParams.get('vote');
       const postId = searchParams.get('post');
       const commentId = searchParams.get('comment');
@@ -52,8 +53,8 @@ export default function LoginPageClient() {
           // ignore, user can retry vote after redirect
         }
       }
-      if (next) {
-        router.push(next);
+      if (safeNext) {
+        router.push(safeNext);
       } else {
         router.push('/');
       }
@@ -62,6 +63,14 @@ export default function LoginPageClient() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getSafeNext = (next) => {
+    if (!next) return null;
+    if (next.startsWith('/') && !next.startsWith('//')) {
+      return next;
+    }
+    return null;
   };
 
   const fetchVote = async (postId, voteType) => {

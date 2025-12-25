@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from typing import Optional, List
 
@@ -24,6 +24,6 @@ class Comment(CommentBase):
 
 class CommentWithUser(Comment):
     username: str
-    replies: List["CommentWithUser"] = []
+    replies: List["CommentWithUser"] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

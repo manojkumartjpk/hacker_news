@@ -12,19 +12,31 @@ class VoteService:
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
 
-        db_vote = Vote(
-            user_id=user_id,
-            post_id=post_id,
-            vote_type=vote.vote_type
-        )
-        db.add(db_vote)
-        try:
+        existing_vote = db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.post_id == post_id
+        ).first()
+        if existing_vote:
+            if existing_vote.vote_type == vote.vote_type:
+                return existing_vote
+            existing_vote.vote_type = vote.vote_type
             db.commit()
-            db.refresh(db_vote)
-            vote_obj = db_vote
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(status_code=409, detail="Vote creation failed")
+            db.refresh(existing_vote)
+            vote_obj = existing_vote
+        else:
+            db_vote = Vote(
+                user_id=user_id,
+                post_id=post_id,
+                vote_type=vote.vote_type
+            )
+            db.add(db_vote)
+            try:
+                db.commit()
+                db.refresh(db_vote)
+                vote_obj = db_vote
+            except IntegrityError:
+                db.rollback()
+                raise HTTPException(status_code=409, detail="Vote creation failed")
 
         # Update post score after voting
         PostService.update_post_score(db, post_id)

@@ -15,7 +15,7 @@ def create_post(
     post: PostCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))  # 10 posts per minute
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Create a new post for the authenticated user."""
     return PostService.create_post(db, post, current_user.id)
@@ -27,7 +27,7 @@ def get_posts(
     sort: str = Query("new", pattern="^(new|top|best)$"),
     post_type: str | None = Query(None, pattern="^(story|ask|show|job)$"),
     db: Session = Depends(get_db),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """List posts with optional paging, sorting, and filtering."""
     posts = PostService.get_posts(db, skip=skip, limit=limit, sort=sort, post_type=post_type)
@@ -39,7 +39,7 @@ def search_posts(
     skip: int = Query(0, ge=0),
     limit: int = Query(30, ge=1, le=100),
     db: Session = Depends(get_db),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Search posts by title or text."""
     return PostService.search_posts(db, query=q, skip=skip, limit=limit)
@@ -48,7 +48,7 @@ def search_posts(
 def get_post(
     post_id: int,
     db: Session = Depends(get_db),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Fetch a single post by ID."""
     return PostService.get_post(db, post_id)
@@ -59,7 +59,7 @@ def update_post(
     post_update: PostUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Update a post owned by the authenticated user."""
     return PostService.update_post(db, post_id, post_update, current_user.id)
@@ -69,7 +69,7 @@ def delete_post(
     post_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Delete a post owned by the authenticated user."""
     PostService.delete_post(db, post_id, current_user.id)

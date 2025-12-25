@@ -35,6 +35,10 @@ class PostService:
             return None
 
     @staticmethod
+    def _serialize_datetime(value):
+        return value.isoformat() if hasattr(value, "isoformat") else value
+
+    @staticmethod
     def create_post(db: Session, post: PostCreate, user_id: int) -> dict:
         # Validate that either url or text is provided
         if not post.url and not post.text:
@@ -69,7 +73,7 @@ class PostService:
             "score": db_post.score,
             "comment_count": 0,
             "user_id": db_post.user_id,
-            "created_at": db_post.created_at,
+            "created_at": PostService._serialize_datetime(db_post.created_at),
             "username": user.username
         }
 
@@ -106,7 +110,7 @@ class PostService:
             "score": score,
             "comment_count": comment_count or 0,
             "user_id": post.user_id,
-            "created_at": post.created_at,
+            "created_at": PostService._serialize_datetime(post.created_at),
             "username": username
         }
 
@@ -171,7 +175,7 @@ class PostService:
                 "score": score,
                 "comment_count": comment_count or 0,
                 "user_id": post.user_id,
-                "created_at": post.created_at.isoformat() if hasattr(post.created_at, "isoformat") else post.created_at,
+                "created_at": PostService._serialize_datetime(post.created_at),
                 "username": username
             }
             posts_with_username.append(post_dict)
@@ -212,7 +216,7 @@ class PostService:
             "post_type": post.post_type,
             "score": post.score,
             "user_id": post.user_id,
-            "created_at": post.created_at,
+            "created_at": PostService._serialize_datetime(post.created_at),
             "username": user.username
         }
 
@@ -291,7 +295,7 @@ class PostService:
                 "score": score,
                 "comment_count": comment_count or 0,
                 "user_id": post.user_id,
-                "created_at": post.created_at.isoformat() if hasattr(post.created_at, "isoformat") else post.created_at,
+                "created_at": PostService._serialize_datetime(post.created_at),
                 "username": username
             })
 

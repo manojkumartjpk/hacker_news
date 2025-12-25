@@ -16,7 +16,7 @@ def vote_on_comment(
     vote: CommentVoteCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit(limit=120, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Upvote or downvote a comment for the authenticated user."""
     if vote.vote_type not in [1, -1]:

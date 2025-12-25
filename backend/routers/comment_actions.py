@@ -16,7 +16,7 @@ def update_comment(
     comment_update: CommentUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Update a comment owned by the authenticated user."""
     return CommentService.update_comment(db, comment_id, comment_update, current_user.id)
@@ -27,7 +27,7 @@ def delete_comment(
     comment_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Delete a comment owned by the authenticated user."""
     CommentService.delete_comment(db, comment_id, current_user.id)

@@ -13,6 +13,18 @@ class CommentVoteService:
         if not comment:
             raise HTTPException(status_code=404, detail="Comment not found")
 
+        existing_vote = db.query(CommentVote).filter(
+            CommentVote.user_id == user_id,
+            CommentVote.comment_id == comment_id
+        ).first()
+        if existing_vote:
+            if existing_vote.vote_type == vote.vote_type:
+                return existing_vote
+            existing_vote.vote_type = vote.vote_type
+            db.commit()
+            db.refresh(existing_vote)
+            return existing_vote
+
         db_vote = CommentVote(
             user_id=user_id,
             comment_id=comment_id,

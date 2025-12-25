@@ -16,7 +16,7 @@ def create_comment(
     comment: CommentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit(limit=30, window=60))  # 30 comments per minute
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Create a comment on a post for the authenticated user."""
     return CommentService.create_comment(db, comment, post_id, current_user.id)
@@ -25,7 +25,7 @@ def create_comment(
 def get_comments_for_post(
     post_id: int,
     db: Session = Depends(get_db),
-    rate_limited: bool = Depends(rate_limit(limit=10, window=60))
+    rate_limited: bool = Depends(rate_limit())
 ):
     """Return the threaded comments for a post."""
     return CommentService.get_comments_for_post(db, post_id)
