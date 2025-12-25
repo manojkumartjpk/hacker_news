@@ -11,6 +11,8 @@ jobs:
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       GIT_REPO: ${{ github.server_url }}/${{ github.repository }}.git
+      NEXT_PUBLIC_API_URL: https://143-110-179-252.nip.io/api
+      CORS_ORIGINS: https://143-110-179-252.nip.io
     steps:
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -18,7 +20,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: SECRET_KEY,GIT_REPO
+          envs: SECRET_KEY,GIT_REPO,NEXT_PUBLIC_API_URL,CORS_ORIGINS
           script: |
             set -e
             if [ ! -d /root/hacker_news/.git ]; then
@@ -26,6 +28,8 @@ jobs:
             fi
             cd /root/hacker_news
             git pull origin main
+            export NEXT_PUBLIC_API_URL
+            export CORS_ORIGINS
             if grep -q '^SECRET_KEY=' backend/.env; then
               sed -i.bak "s/^SECRET_KEY=.*/SECRET_KEY=${SECRET_KEY}/" backend/.env
               rm -f backend/.env.bak
