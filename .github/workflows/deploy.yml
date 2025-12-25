@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      GIT_REPO: ${{ github.server_url }}/${{ github.repository }}.git
     steps:
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -17,11 +18,14 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: SECRET_KEY
+          envs: SECRET_KEY,GIT_REPO
           script: |
             set -e
+            if [ ! -d /root/hacker_news/.git ]; then
+              git clone --branch main "$GIT_REPO" /root/hacker_news
+            fi
             cd /root/hacker_news
-            git pull
+            git pull origin main
             if grep -q '^SECRET_KEY=' backend/.env; then
               sed -i.bak "s/^SECRET_KEY=.*/SECRET_KEY=${SECRET_KEY}/" backend/.env
               rm -f backend/.env.bak
