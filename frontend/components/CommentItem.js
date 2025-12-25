@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import { commentsAPI } from '../lib/api';
-import { timeAgo } from '../lib/format';
+import { pointsLabel, timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
 
 const MAX_NESTING = 5; // Prevent runaway nesting in deep reply threads.
@@ -96,6 +96,10 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
               )}
             </div>
             <span className="comhead">
+              <span className="score">
+                {comment.score} {pointsLabel(comment.score)}
+              </span>
+              {' '}
               <a href={`/user/${comment.username}`} className="hnuser">
                 {comment.username}
               </a>

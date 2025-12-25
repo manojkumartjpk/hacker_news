@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 import secrets
 from database import get_db
-from auth import create_access_token, revoke_token, verify_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from auth import create_access_token, revoke_token, verify_token, ACCESS_TOKEN_EXPIRE_MINUTES, COOKIE_SECURE
 from auth.deps import get_current_user, get_current_token
 from schemas import UserCreate, User, Token, UserLogin, Availability, Message
 from services import UserService
@@ -47,7 +47,7 @@ def login(
         httponly=True,
         samesite="lax",
         max_age=max_age,
-        secure=False,
+        secure=COOKIE_SECURE,
     )
     response.set_cookie(
         "csrf_token",
@@ -55,7 +55,7 @@ def login(
         httponly=False,
         samesite="lax",
         max_age=max_age,
-        secure=False,
+        secure=COOKIE_SECURE,
     )
     response.set_cookie(
         "auth_status",
@@ -63,7 +63,7 @@ def login(
         httponly=False,
         samesite="lax",
         max_age=max_age,
-        secure=False,
+        secure=COOKIE_SECURE,
     )
     response.headers["X-CSRF-Token"] = csrf_token
     return {"access_token": access_token, "token_type": "bearer"}

@@ -256,6 +256,8 @@ Response:
 
 `GET /posts/{post_id}/comments`
 
+Comments are sorted by total score (the comment's votes plus all nested replies). Ties are broken by `created_at` descending.
+
 Response:
 ```json
 [
@@ -271,6 +273,23 @@ Response:
     "replies": []
   }
 ]
+```
+
+`GET /comments/{comment_id}`
+
+Response:
+```json
+{
+  "id": 1,
+  "text": "string",
+  "user_id": 1,
+  "post_id": 1,
+  "parent_id": "integer | null",
+  "created_at": "string",
+  "username": "string",
+  "post_title": "string",
+  "score": 0
+}
 ```
 
 `PUT /comments/{comment_id}`
@@ -305,6 +324,8 @@ Auth: required
 Response: `204 No Content`
 
 `GET /comments/recent`
+
+Comments are sorted by `created_at` descending.
 
 Request params:
 - `skip`: integer (optional, default: 0)
@@ -361,6 +382,17 @@ Response:
 }
 ```
 
+`DELETE /posts/{post_id}/vote`
+
+Auth: required
+
+Response:
+```json
+{
+  "vote_type": 0
+}
+```
+
 `POST /comments/{comment_id}/vote`
 
 Auth: required
@@ -380,6 +412,28 @@ Response:
   "comment_id": 1,
   "vote_type": 1,
   "created_at": "string"
+}
+```
+
+`GET /comments/{comment_id}/vote`
+
+Auth: required
+
+Response:
+```json
+{
+  "vote_type": 1
+}
+```
+
+`DELETE /comments/{comment_id}/vote`
+
+Auth: required
+
+Response:
+```json
+{
+  "vote_type": 0
 }
 ```
 

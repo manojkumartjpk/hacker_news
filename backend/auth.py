@@ -13,6 +13,11 @@ if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is required")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+COOKIE_SECURE = (
+    os.getenv("COOKIE_SECURE", "").lower() in {"1", "true", "yes"}
+    or ENVIRONMENT in {"production", "prod"}
+)
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],

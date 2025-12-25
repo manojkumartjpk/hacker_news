@@ -45,15 +45,24 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 - **Rate limits**: Authenticated requests are limited to 120 requests/minute per user. Unauthenticated requests are limited to 20 requests/minute per IP. Limits apply to endpoints using the rate limit dependency.
 - **Logout revocation**: Token revocation is stored in Redis. If Redis is disabled or unavailable, logout will not invalidate existing tokens.
 
+## Voting and Ranking
+
+- **Post score**: The score is the sum of votes on the post. Posts are ranked by score for `top`/`best` sorting.
+- **Comment score**: The score is the sum of votes on the comment plus all nested replies. In a post discussion, comments are ordered by score (desc), then `created_at` (desc) for ties.
+- **Comments feed**: The `/comments` page is ordered by `created_at` (desc) regardless of score.
+
 ## Setup
 
 1. Ensure Docker and Docker Compose are installed.
 
 2. Clone or navigate to the project directory.
 
-3. Export `SECRET_KEY` (for CI, set this as a repository secret and pass it as an env var).
+3. Start the stack with the following command for development (without Caddy):
+   ```bash
+   docker compose -f docker-compose.dev.yml up --build
+   ```
 
-4. Run the following command to start all services (includes Caddy):
+4. (Optional) For hosted deployment Run the following command to start all services (includes Caddy):
 
    ```bash
    docker-compose up --build
@@ -65,16 +74,12 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
    - Database: localhost:5432 (PostgreSQL)
    - Cache: localhost:6379 (Redis)
 
-### Local run without Caddy (recommended)
-Start the stack without the reverse proxy:
-
-```bash
-docker compose -f docker-compose.dev.yml up --build
-```
 
 ### Environment variables
 - Backend (Docker): `backend/.env` uses container hostnames. `SECRET_KEY` must be set via your environment or repository secrets.
 - Backend (local dev): copy `backend/.env.example` to `backend/.env` and set `SECRET_KEY`.
+- Backend: `ENVIRONMENT` (defaults to `development`; set to `production` to enable secure auth cookies).
+- Backend: `COOKIE_SECURE` (optional; set to `true` to force secure cookies regardless of `ENVIRONMENT`).
 - Frontend: `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8000`).
 
 ## Development
@@ -183,14 +188,18 @@ Notes:
 - `DELETE /posts/{post_id}` - Delete post
 - `POST /posts/{post_id}/vote` - Vote on post
 - `GET /posts/{post_id}/vote` - Get current user's vote
+- `DELETE /posts/{post_id}/vote` - Remove current user's vote
 
 ### Comments
 - `GET /posts/{post_id}/comments` - Get comments for post
 - `POST /posts/{post_id}/comments` - Create comment
-- `PUT /posts/{comment_id}` - Update comment
-- `DELETE /posts/{comment_id}` - Delete comment
+- `GET /comments/{comment_id}` - Get single comment
+- `PUT /comments/{comment_id}` - Update comment
+- `DELETE /comments/{comment_id}` - Delete comment
 - `GET /comments/recent` - Recent comments feed
 - `POST /comments/{comment_id}/vote` - Vote on comment
+- `GET /comments/{comment_id}/vote` - Get current user's comment vote
+- `DELETE /comments/{comment_id}/vote` - Remove current user's comment vote
 
 ### Notifications
 - `GET /notifications/` - Get user notifications
@@ -215,3 +224,4 @@ The application uses the following main entities:
    - Unit and e2e test creation
    - Documentation drafting
    - Code review and refactoring suggestions
+   - github actions CI setup

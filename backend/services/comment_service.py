@@ -7,6 +7,93 @@ from fastapi import HTTPException
 
 class CommentService:
     @staticmethod
+    def _build_thread_with_scores(rows: list[tuple[Comment, str, int | None]]) -> list[dict]:
+        comments_dict: dict[int, dict] = {}
+        for comment, username, score in rows:
+            comments_dict[comment.id] = {
+                "id": comment.id,
+                "text": comment.text,
+                "user_id": comment.user_id,
+                "post_id": comment.post_id,
+                "parent_id": comment.parent_id,
+                "created_at": comment.created_at,
+                "username": username,
+                "score": score or 0,
+                "replies": []
+            }
+
+        top_level_comments: list[dict] = []
+        for comment_id, comment in comments_dict.items():
+            parent_id = comment["parent_id"]
+            if parent_id is None:
+                top_level_comments.append(comment)
+                continue
+            parent = comments_dict.get(parent_id)
+            if parent:
+                parent["replies"].append(comment)
+            else:
+                top_level_comments.append(comment)
+
+        def aggregate_scores(node: dict) -> int:
+            total = node["score"]
+            for reply in node["replies"]:
+                total += aggregate_scores(reply)
+            node["score"] = total
+            return total
+
+        def sort_replies(node: dict) -> None:
+            node["replies"].sort(
+                key=lambda item: (item["score"], item["created_at"]),
+                reverse=True
+            )
+            for reply in node["replies"]:
+                sort_replies(reply)
+
+        for comment in top_level_comments:
+            aggregate_scores(comment)
+
+        top_level_comments.sort(
+            key=lambda item: (item["score"], item["created_at"]),
+            reverse=True
+        )
+        for comment in top_level_comments:
+            sort_replies(comment)
+
+        return top_level_comments
+
+    @staticmethod
+    def _find_comment_score(comments: list[dict], comment_id: int) -> int | None:
+        for comment in comments:
+            if comment["id"] == comment_id:
+                return comment["score"]
+            if comment.get("replies"):
+                nested_score = CommentService._find_comment_score(comment["replies"], comment_id)
+                if nested_score is not None:
+                    return nested_score
+        return None
+
+    @staticmethod
+    def _get_total_score_for_comment(db: Session, comment_id: int, post_id: int) -> int:
+        comment_score_subq = db.query(
+            CommentVote.comment_id.label("comment_id"),
+            func.sum(CommentVote.vote_type).label("score")
+        ).group_by(CommentVote.comment_id).subquery()
+
+        results = db.query(
+            Comment,
+            User.username,
+            comment_score_subq.c.score
+        ).join(User).outerjoin(
+            comment_score_subq,
+            comment_score_subq.c.comment_id == Comment.id
+        ).filter(
+            Comment.post_id == post_id
+        ).all()
+
+        thread = CommentService._build_thread_with_scores(results)
+        return CommentService._find_comment_score(thread, comment_id) or 0
+
+    @staticmethod
     def create_comment(db: Session, comment: CommentCreate, post_id: int, user_id: int) -> dict:
         if not comment.text or not comment.text.strip():
             raise HTTPException(status_code=400, detail="Comment text is required")
@@ -79,34 +166,8 @@ class CommentService:
         ).filter(
             Comment.post_id == post_id
         ).order_by(Comment.created_at).all()
-        
-        # Convert results into a lookup table keyed by comment id.
-        comments_dict = {}
-        for comment, username, score in results:
-            comment_dict = {
-                "id": comment.id,
-                "text": comment.text,
-                "user_id": comment.user_id,
-                "post_id": comment.post_id,
-                "parent_id": comment.parent_id,
-                "created_at": comment.created_at,
-                "username": username,
-                "score": score or 0,
-                "replies": []
-            }
-            comments_dict[comment.id] = comment_dict
-        
-        # Build a threaded structure using parent_id relationships.
-        top_level_comments = []
-        for comment_id, comment in comments_dict.items():
-            if comment["parent_id"] is None:
-                top_level_comments.append(comment)
-            else:
-                parent = comments_dict.get(comment["parent_id"])
-                if parent:
-                    parent["replies"].append(comment)
-        
-        return top_level_comments
+
+        return CommentService._build_thread_with_scores(results)
 
     @staticmethod
     def get_recent_comments(db: Session, skip: int = 0, limit: int = 30) -> list[dict]:
@@ -163,6 +224,7 @@ class CommentService:
             raise HTTPException(status_code=404, detail="Comment not found")
 
         comment, username, post_title, score = result
+        total_score = CommentService._get_total_score_for_comment(db, comment_id, comment.post_id)
         return {
             "id": comment.id,
             "text": comment.text,
@@ -172,7 +234,7 @@ class CommentService:
             "created_at": comment.created_at,
             "username": username,
             "post_title": post_title,
-            "score": score or 0
+            "score": total_score
         }
 
     @staticmethod
@@ -187,6 +249,7 @@ class CommentService:
         
         # Get username
         user = db.query(User).filter(User.id == comment.user_id).first()
+        total_score = CommentService._get_total_score_for_comment(db, comment_id, comment.post_id)
         
         return {
             "id": comment.id,
@@ -196,7 +259,7 @@ class CommentService:
             "parent_id": comment.parent_id,
             "created_at": comment.created_at,
             "username": user.username,
-            "score": 0
+            "score": total_score
         }
 
     @staticmethod
