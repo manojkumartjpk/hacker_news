@@ -86,6 +86,9 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
                     try {
                       await commentsAPI.vote(comment.id, { vote_type: 1 });
                       setUserVote(1);
+                      if (onRefresh) {
+                        onRefresh();
+                      }
                     } catch (error) {
                       alert(getErrorMessage(error, 'Failed to vote. Please try again.'));
                     }
@@ -117,6 +120,9 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
                       try {
                         await commentsAPI.unvote(comment.id);
                         setUserVote(0);
+                        if (onRefresh) {
+                          onRefresh();
+                        }
                       } catch (error) {
                         alert(getErrorMessage(error, 'Failed to remove vote. Please try again.'));
                       }
