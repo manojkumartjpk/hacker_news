@@ -4,12 +4,19 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 
 # Import database and create tables on startup
+from sqlalchemy import text
 from database import engine, Base
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    # Serialize schema creation across multiple workers to avoid enum race.
+    with engine.begin() as conn:
+        conn.execute(text("SELECT pg_advisory_lock(2147483647)"))
+        try:
+            Base.metadata.create_all(bind=conn)
+        finally:
+            conn.execute(text("SELECT pg_advisory_unlock(2147483647)"))
     yield
 
 app = FastAPI(

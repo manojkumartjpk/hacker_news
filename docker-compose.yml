@@ -34,7 +34,6 @@ services:
       - ./backend/.env
     environment:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://frontend:3000}
-      - SECRET_KEY=${SECRET_KEY}
     ports:
       - "8000:8000"
     depends_on:

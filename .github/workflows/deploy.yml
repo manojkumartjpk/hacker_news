@@ -1,6 +1,8 @@
 name: Deploy
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -20,5 +22,5 @@ jobs:
             set -e
             cd /root/hacker_news
             git pull
-            printf 'SECRET_KEY=%s\n' "$SECRET_KEY" > .env
+            printf 'SECRET_KEY=%s\n' "$SECRET_KEY" > backend/.env
             docker compose -f docker-compose.yml up -d --build --remove-orphans

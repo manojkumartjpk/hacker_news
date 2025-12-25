@@ -10,8 +10,6 @@ services:
         condition: service_healthy
     env_file:
       - ./backend/.env.test
-    environment:
-      - SECRET_KEY=${SECRET_KEY}
     command: pytest
 
   backend:
@@ -25,8 +23,6 @@ services:
         condition: service_healthy
     env_file:
       - ./backend/.env.test
-    environment:
-      - SECRET_KEY=${SECRET_KEY}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000').read()"]
       interval: 5s
