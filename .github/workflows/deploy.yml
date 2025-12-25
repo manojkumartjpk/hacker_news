@@ -17,4 +17,4 @@ jobs:
             set -e
             cd /root/hacker_news
             git pull
-            docker compose up -d --build --remove-orphans
+            docker compose -f docker-compose.yml up -d --build --remove-orphans
