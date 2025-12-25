@@ -18,4 +18,5 @@ jobs:
             set -e
             cd /root/hacker_news
             git pull
+            docker-compose down
             docker-compose up -d --build
