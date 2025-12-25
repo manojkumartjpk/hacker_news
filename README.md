@@ -74,6 +74,8 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
    - Database: localhost:5432 (PostgreSQL)
    - Cache: localhost:6379 (Redis)
 
+6. Have used github actions for CI/CD pipeline.
+
 
 ### Environment variables
 - Backend (Docker): `backend/.env` uses container hostnames. `SECRET_KEY` must be set via your environment or repository secrets.
