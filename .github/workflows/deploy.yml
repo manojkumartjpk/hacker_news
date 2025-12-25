@@ -22,5 +22,10 @@ jobs:
             set -e
             cd /root/hacker_news
             git pull
-            printf 'SECRET_KEY=%s\n' "$SECRET_KEY" > backend/.env
+            if grep -q '^SECRET_KEY=' backend/.env; then
+              sed -i.bak "s/^SECRET_KEY=.*/SECRET_KEY=${SECRET_KEY}/" backend/.env
+              rm -f backend/.env.bak
+            else
+              printf '\nSECRET_KEY=%s\n' "$SECRET_KEY" >> backend/.env
+            fi
             docker compose -f docker-compose.yml up -d --build --remove-orphans
