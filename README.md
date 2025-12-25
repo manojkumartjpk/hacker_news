@@ -38,6 +38,10 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 - **Redis**: Caching for feed data, vote scores, rate limiting
 - **REST API**: Clean separation between routers, services, models, and schemas
 
+## CI/CD
+
+- **GitHub Actions (CD)**: Deploy workflow runs on `main` pushes to ship the app.
+
 ## Caching and Rate Limiting
 
 - **Feed cache**: Redis caches feed responses for 5 minutes (TTL). Cache is invalidated on new posts and new comments via a feed version bump.
@@ -169,6 +173,10 @@ COVERAGE=1 ./scripts/run-tests.sh
 Notes:
 - Coverage output is printed to the console when running in Docker.
 - To generate host-side coverage artifacts (XML/HTML), run with `USE_DOCKER_TESTS=0`.
+
+Coverage (latest run):
+- Backend total: 95% statements
+- Frontend total: 98.63% statements, 97.36% branches, 100% functions, 99.26% lines
 
 ## API Endpoints
 

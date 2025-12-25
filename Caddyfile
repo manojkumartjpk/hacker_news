@@ -1,4 +1,4 @@
-143-110-179-252.nip.io {
+hn.143-110-179-252.nip.io {
   encode gzip
 
   handle_path /api/* {

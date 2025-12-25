@@ -11,8 +11,8 @@ jobs:
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       GIT_REPO: ${{ github.server_url }}/${{ github.repository }}.git
-      NEXT_PUBLIC_API_URL: https://143-110-179-252.nip.io/api
-      CORS_ORIGINS: https://143-110-179-252.nip.io
+      NEXT_PUBLIC_API_URL: https://hn.143-110-179-252.nip.io/api
+      CORS_ORIGINS: https://hn.143-110-179-252.nip.io
       COOKIE_SECURE: "true"
     steps:
       - name: SSH deploy
@@ -38,4 +38,4 @@ jobs:
             else
               printf '\nSECRET_KEY=%s\n' "$SECRET_KEY" >> backend/.env
             fi
-            docker compose -f docker-compose.yml up -d --build --remove-orphans
+            docker compose -f docker-compose.yml up -d --build backend frontend
