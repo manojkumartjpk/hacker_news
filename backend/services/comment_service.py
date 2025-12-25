@@ -137,6 +137,45 @@ class CommentService:
         return recent_comments
 
     @staticmethod
+    def get_comment_detail(db: Session, comment_id: int) -> dict:
+        comment_score_subq = db.query(
+            CommentVote.comment_id.label("comment_id"),
+            func.sum(CommentVote.vote_type).label("score")
+        ).group_by(CommentVote.comment_id).subquery()
+
+        result = db.query(
+            Comment,
+            User.username,
+            Post.title,
+            comment_score_subq.c.score
+        ).select_from(Comment).join(
+            User, Comment.user_id == User.id
+        ).join(
+            Post, Comment.post_id == Post.id
+        ).outerjoin(
+            comment_score_subq,
+            comment_score_subq.c.comment_id == Comment.id
+        ).filter(
+            Comment.id == comment_id
+        ).first()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Comment not found")
+
+        comment, username, post_title, score = result
+        return {
+            "id": comment.id,
+            "text": comment.text,
+            "user_id": comment.user_id,
+            "post_id": comment.post_id,
+            "parent_id": comment.parent_id,
+            "created_at": comment.created_at,
+            "username": username,
+            "post_title": post_title,
+            "score": score or 0
+        }
+
+    @staticmethod
     def update_comment(db: Session, comment_id: int, comment_update: CommentUpdate, user_id: int) -> dict:
         comment = CommentService.get_comment(db, comment_id)
         if comment.user_id != user_id:

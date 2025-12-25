@@ -33,3 +33,14 @@ def get_user_vote_on_post(
     if vote:
         return {"vote_type": vote.vote_type}
     return {"vote_type": 0}
+
+@router.delete("/{post_id}/vote", response_model=VoteStatus)
+def remove_vote_on_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    rate_limited: bool = Depends(rate_limit())
+):
+    """Remove the current user's vote on a post."""
+    VoteService.remove_vote_on_post(db, post_id, current_user.id)
+    return {"vote_type": 0}

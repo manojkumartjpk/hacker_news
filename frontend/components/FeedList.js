@@ -24,6 +24,7 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState('');
+  const [userVotes, setUserVotes] = useState({});
 
   useEffect(() => {
     fetchPosts();
@@ -33,6 +34,27 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
     const authStatus = Cookies.get('auth_status');
     setIsLoggedIn(!!authStatus);
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn || posts.length === 0) {
+      setUserVotes({});
+      return;
+    }
+    const fetchVotes = async () => {
+      try {
+        const entries = await Promise.all(
+          posts.map(async (post) => {
+            const response = await postsAPI.getVote(post.id);
+            return [post.id, response.data.vote_type];
+          })
+        );
+        setUserVotes(Object.fromEntries(entries));
+      } catch (error) {
+        // Ignore vote lookup failures to keep the feed usable.
+      }
+    };
+    fetchVotes();
+  }, [isLoggedIn, posts]);
 
   const fetchPosts = async () => {
     try {
@@ -51,18 +73,30 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
     }
   };
 
-  const handleVote = async (postId, voteType) => {
+  const handleVote = async (postId) => {
     if (!isLoggedIn) {
       const nextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-      router.replace(`/login?next=${encodeURIComponent(nextUrl)}&vote=${voteType}&post=${postId}`);
+      router.replace(`/login?next=${encodeURIComponent(nextUrl)}&vote=1&post=${postId}`);
       return;
     }
     try {
       setError('');
-      await postsAPI.vote(postId, { vote_type: voteType });
+      await postsAPI.vote(postId, { vote_type: 1 });
+      setUserVotes((prev) => ({ ...prev, [postId]: 1 }));
       fetchPosts();
     } catch (error) {
       setError(getErrorMessage(error, 'Failed to vote. Please try again.'));
+    }
+  };
+
+  const handleUnvote = async (postId) => {
+    try {
+      setError('');
+      await postsAPI.unvote(postId);
+      setUserVotes((prev) => ({ ...prev, [postId]: 0 }));
+      fetchPosts();
+    } catch (error) {
+      setError(getErrorMessage(error, 'Failed to remove vote. Please try again.'));
     }
   };
 
@@ -92,6 +126,7 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
         {posts.map((post, index) => {
           const hostname = safeHostname(post.url);
           const rank = (page - 1) * POSTS_PER_PAGE + index + 1;
+          const userVote = userVotes[post.id] || 0;
           return (
             <React.Fragment key={post.id}>
               <tr className="athing submission">
@@ -100,26 +135,20 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
                 </td>
                 <td style={{ verticalAlign: 'top' }} className="votelinks">
                   <center>
-                    <a
-                      id={`up_${post.id}`}
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleVote(post.id, 1);
-                      }}
-                    >
-                      <div className="votearrow" title="upvote"></div>
-                    </a>
-                    <a
-                      id={`down_${post.id}`}
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleVote(post.id, -1);
-                      }}
-                    >
-                      <div className="votearrow downvote" title="downvote"></div>
-                    </a>
+                    {userVote === 1 ? (
+                      <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                    ) : (
+                      <a
+                        id={`up_${post.id}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleVote(post.id);
+                        }}
+                      >
+                        <div className="votearrow" title="upvote"></div>
+                      </a>
+                    )}
                   </center>
                 </td>
                 <td className="title">
@@ -165,7 +194,21 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
                         <span className="age" title={new Date(post.created_at).toISOString()}>
                           <a href={`/post/${post.id}`}>{timeAgo(post.created_at)}</a>
                         </span>{' '}
-                        <span id={`unv_${post.id}`}></span> |{' '}
+                        {isLoggedIn && userVote === 1 && (
+                          <>
+                            |{' '}
+                            <a
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleUnvote(post.id);
+                              }}
+                            >
+                              unvote
+                            </a>{' '}
+                          </>
+                        )}
+                        |{' '}
                         <a href={`/post/${post.id}`}>
                           {post.comment_count > 0
                             ? `${post.comment_count} ${commentsLabel(post.comment_count)}`

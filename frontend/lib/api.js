@@ -53,15 +53,19 @@ export const postsAPI = {
   deletePost: (id) => api.delete(`/posts/${id}`),
   vote: (postId, voteData) => api.post(`/posts/${postId}/vote`, voteData),
   getVote: (postId) => api.get(`/posts/${postId}/vote`),
+  unvote: (postId) => api.delete(`/posts/${postId}/vote`),
 };
 
 export const commentsAPI = {
   getComments: (postId) => api.get(`/posts/${postId}/comments`),
+  getComment: (commentId) => api.get(`/comments/${commentId}`),
   createComment: (postId, commentData) => api.post(`/posts/${postId}/comments`, commentData),
   updateComment: (commentId, commentData) => api.put(`/comments/${commentId}`, commentData),
   deleteComment: (commentId) => api.delete(`/comments/${commentId}`),
   getRecentComments: (params) => api.get('/comments/recent', { params }),
   vote: (commentId, voteData) => api.post(`/comments/${commentId}/vote`, voteData),
+  getVote: (commentId) => api.get(`/comments/${commentId}/vote`),
+  unvote: (commentId) => api.delete(`/comments/${commentId}/vote`),
 };
 
 export const notificationsAPI = {

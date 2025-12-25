@@ -86,7 +86,6 @@ export default function CommentsPageClient() {
         ))}
         <tr className="spacer" style={{ height: '10px' }}></tr>
         <tr>
-          <td colSpan="2"></td>
           <td className="title">
             <a href={`/comments?p=${page + 1}`}>More</a>
           </td>

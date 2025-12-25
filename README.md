@@ -69,7 +69,7 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 Start the stack without the reverse proxy:
 
 ```bash
-docker compose up --build backend frontend postgres redis
+docker compose -f docker-compose.dev.yml up --build
 ```
 
 ### Environment variables
@@ -93,13 +93,6 @@ pip install -r requirements.txt
 export POSTGRES_URL=postgresql://user:password@localhost:5432/hackernews
 export REDIS_URL=redis://localhost:6379
 uvicorn main:app --reload
-```
-
-### Docker hot reload
-Create containers with live reload enabled (via `docker-compose.override.yml`):
-
-```bash
-docker compose up --build
 ```
 
 ## Tests (Dockerized by default)
@@ -217,6 +210,7 @@ The application uses the following main entities:
 ## AI Assistance
 - ChatGPT/Codex:
    - Frontend component scaffolding
+   - Since i am new to React, help with hooks and state management
    - Backend API route scaffolding
    - Unit and e2e test creation
    - Documentation drafting

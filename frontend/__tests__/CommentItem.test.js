@@ -16,6 +16,8 @@ jest.mock('../lib/api', () => ({
     updateComment: jest.fn(),
     deleteComment: jest.fn(),
     vote: jest.fn(),
+    getVote: jest.fn(),
+    unvote: jest.fn(),
   },
 }));
 
@@ -45,35 +47,13 @@ describe('CommentItem', () => {
     commentsAPI.updateComment.mockClear();
     commentsAPI.deleteComment.mockClear();
     commentsAPI.vote.mockClear();
+    commentsAPI.getVote.mockClear();
+    commentsAPI.unvote.mockClear();
     commentsAPI.updateComment.mockResolvedValue({ data: {} });
     commentsAPI.deleteComment.mockResolvedValue({ data: {} });
     commentsAPI.vote.mockResolvedValue({ data: {} });
-  });
-
-  it('shows reply form and submits reply', async () => {
-    const user = userEvent.setup();
-    Cookies.get.mockReturnValue('token');
-    const onReply = jest.fn();
-
-    render(
-      <table>
-        <tbody>
-          <CommentItem comment={baseComment} onReply={onReply} currentUser={{ id: 2 }} />
-        </tbody>
-      </table>,
-    );
-
-    await act(async () => {
-      await user.click(screen.getByRole('link', { name: 'reply' }));
-    });
-    const replyForm = screen.getByText('Reply:').parentElement;
-    const replyBox = within(replyForm).getByRole('textbox');
-    await act(async () => {
-      await user.type(replyBox, 'Nice reply');
-      await user.click(screen.getByRole('button', { name: 'reply' }));
-    });
-
-    expect(onReply).toHaveBeenCalledWith(10, 'Nice reply');
+    commentsAPI.getVote.mockResolvedValue({ data: { vote_type: 0 } });
+    commentsAPI.unvote.mockResolvedValue({ data: {} });
   });
 
   it('redirects to login when voting while logged out', async () => {
@@ -134,7 +114,7 @@ describe('CommentItem', () => {
       </table>,
     );
 
-    expect(screen.getByRole('link', { name: 'reply' })).toHaveAttribute('href', '/login?next=/post/5');
+    expect(screen.getByRole('link', { name: 'reply' })).toHaveAttribute('href', '/login?next=/reply/10');
   });
 
   it('hides reply link when max depth reached', () => {
@@ -149,6 +129,20 @@ describe('CommentItem', () => {
     );
 
     expect(screen.queryByRole('link', { name: 'reply' })).not.toBeInTheDocument();
+  });
+
+  it('links to reply page when logged in', () => {
+    Cookies.get.mockReturnValue('token');
+
+    render(
+      <table>
+        <tbody>
+          <CommentItem comment={baseComment} currentUser={{ id: 2 }} />
+        </tbody>
+      </table>,
+    );
+
+    expect(screen.getByRole('link', { name: 'reply' })).toHaveAttribute('href', '/reply/10');
   });
 
   it('allows the owner to delete a comment', async () => {
@@ -282,27 +276,6 @@ describe('CommentItem', () => {
     alertSpy.mockRestore();
   });
 
-  it('does not submit empty reply text', async () => {
-    const user = userEvent.setup();
-    Cookies.get.mockReturnValue('token');
-    const onReply = jest.fn();
-
-    render(
-      <table>
-        <tbody>
-          <CommentItem comment={baseComment} onReply={onReply} currentUser={{ id: 2 }} />
-        </tbody>
-      </table>,
-    );
-
-    await act(async () => {
-      await user.click(screen.getByRole('link', { name: 'reply' }));
-      await user.click(screen.getByRole('button', { name: 'reply' }));
-    });
-
-    expect(onReply).not.toHaveBeenCalled();
-  });
-
   it('does not update when edit text is empty and can cancel', async () => {
     const user = userEvent.setup();
     Cookies.get.mockReturnValue('token');
@@ -336,31 +309,7 @@ describe('CommentItem', () => {
     expect(screen.queryByText('Text:')).not.toBeInTheDocument();
   });
 
-  it('hides reply form when cancel is clicked', async () => {
-    const user = userEvent.setup();
-    Cookies.get.mockReturnValue('token');
-
-    render(
-      <table>
-        <tbody>
-          <CommentItem comment={baseComment} currentUser={{ id: 2 }} />
-        </tbody>
-      </table>,
-    );
-
-    await act(async () => {
-      await user.click(screen.getByRole('link', { name: 'reply' }));
-    });
-    const replyForm = screen.getByText('Reply:').parentElement;
-    expect(replyForm.className).toContain('show');
-    await act(async () => {
-      await user.click(within(replyForm).getByRole('button', { name: 'cancel' }));
-    });
-
-    expect(replyForm.className).not.toContain('show');
-  });
-
-  it('toggles edit and reply cancel actions', async () => {
+  it('toggles edit cancel action', async () => {
     const user = userEvent.setup();
     Cookies.get.mockReturnValue('token');
 
@@ -381,15 +330,6 @@ describe('CommentItem', () => {
       await user.click(within(editContainer).getByRole('button', { name: 'cancel' }));
     });
     expect(screen.queryByText('Text:')).not.toBeInTheDocument();
-
-    await act(async () => {
-      await user.click(screen.getByRole('link', { name: 'reply' }));
-    });
-    const replyForm = screen.getByText('Reply:').parentElement;
-    await act(async () => {
-      await user.click(within(replyForm).getByRole('button', { name: 'cancel' }));
-    });
-    expect(replyForm.className).not.toContain('show');
   });
 
   it('renders nested replies', () => {

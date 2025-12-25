@@ -269,14 +269,20 @@ test.describe.serial('Hacker News e2e flows', () => {
     await expect(page.getByText(state.comments.updatedText)).toBeVisible();
 
     const replyBase = page.locator('tr.comtr', { hasText: state.comments.notifyText });
-    await replyBase.getByRole('link', { name: 'reply' }).click();
+    const replyLink = replyBase.getByRole('link', { name: 'reply' });
+    const replyHref = await replyLink.getAttribute('href');
+    await replyLink.click();
+    if (replyHref) {
+      await page.waitForURL(replyHref);
+    }
     state.comments.replyText = `E2E Reply ${state.suffix}`;
-    await replyBase.locator('textarea.comment-box').fill(state.comments.replyText);
+    await page.locator('textarea.comment-box').fill(state.comments.replyText);
     const replyCreateResponse = page.waitForResponse((response) => (
       response.url().includes('/comments') && response.request().method() === 'POST'
     ));
-    await replyBase.getByRole('button', { name: 'reply' }).click();
+    await page.getByRole('button', { name: 'reply' }).click();
     await replyCreateResponse;
+    await page.waitForURL(/\/post\/\d+/);
     await expect(page.getByText(state.comments.replyText)).toBeVisible();
 
     const updatedRow = page.locator('tr.comtr', { hasText: state.comments.updatedText });

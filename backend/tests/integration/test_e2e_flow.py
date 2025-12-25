@@ -38,12 +38,27 @@ def test_end_to_end_user_flow(client, make_user):
     )
     assert vote_response.status_code == 200
 
+    delete_vote_response = client.delete(
+        f"/posts/{post_id}/vote",
+        headers=reader_headers,
+    )
+    assert delete_vote_response.status_code == 200
+
     comment_vote_response = client.post(
         f"/comments/{comment_id}/vote",
         json={"vote_type": 1},
         headers=author_headers,
     )
     assert comment_vote_response.status_code == 200
+
+    delete_comment_vote = client.delete(
+        f"/comments/{comment_id}/vote",
+        headers=author_headers,
+    )
+    assert delete_comment_vote.status_code == 200
+
+    comment_detail = client.get(f"/comments/{comment_id}")
+    assert comment_detail.status_code == 200
 
     unread_response = client.get("/notifications/unread/count", headers=author_headers)
     assert unread_response.status_code == 200

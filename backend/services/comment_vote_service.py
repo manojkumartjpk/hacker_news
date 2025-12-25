@@ -45,3 +45,28 @@ class CommentVoteService:
             CommentVote.comment_id == comment_id
         ).scalar()
         return int(score or 0)
+
+    @staticmethod
+    def get_user_vote_on_comment(db: Session, comment_id: int, user_id: int) -> CommentVote:
+        comment = db.query(Comment).filter(Comment.id == comment_id).first()
+        if not comment:
+            raise HTTPException(status_code=404, detail="Comment not found")
+
+        return db.query(CommentVote).filter(
+            CommentVote.user_id == user_id,
+            CommentVote.comment_id == comment_id
+        ).order_by(CommentVote.created_at.desc()).first()
+
+    @staticmethod
+    def remove_vote_on_comment(db: Session, comment_id: int, user_id: int) -> None:
+        comment = db.query(Comment).filter(Comment.id == comment_id).first()
+        if not comment:
+            raise HTTPException(status_code=404, detail="Comment not found")
+
+        existing_vote = db.query(CommentVote).filter(
+            CommentVote.user_id == user_id,
+            CommentVote.comment_id == comment_id
+        ).first()
+        if existing_vote:
+            db.delete(existing_vote)
+            db.commit()

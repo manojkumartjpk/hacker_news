@@ -12,6 +12,8 @@ jest.mock('../lib/api', () => ({
   postsAPI: {
     getPosts: jest.fn(),
     vote: jest.fn(),
+    getVote: jest.fn(),
+    unvote: jest.fn(),
   },
 }));
 
@@ -52,6 +54,7 @@ describe('FeedList', () => {
         },
       ],
     });
+    postsAPI.getVote.mockResolvedValue({ data: { vote_type: 0 } });
   });
 
   it('renders posts after loading', async () => {
@@ -117,9 +120,9 @@ describe('FeedList', () => {
     render(<FeedList />);
 
     await waitFor(() => expect(screen.getByText('Hello Feed')).toBeInTheDocument());
-    await userEvent.click(screen.getByTitle('downvote'));
+    await userEvent.click(screen.getByTitle('upvote'));
 
-    expect(replace).toHaveBeenCalledWith('/login?next=%2Fnews%3Fsort%3Dtop%26p%3D2&vote=-1&post=1');
+    expect(replace).toHaveBeenCalledWith('/login?next=%2Fnews%3Fsort%3Dtop%26p%3D2&vote=1&post=1');
   });
 
   it('shows the error message when fetch fails', async () => {
@@ -228,19 +231,6 @@ describe('FeedList', () => {
     await waitFor(() => {
       expect(screen.getByText('vote failed')).toBeInTheDocument();
     });
-  });
-
-  it('handles downvote when logged in', async () => {
-    const user = userEvent.setup();
-    Cookies.get.mockReturnValue('token');
-    postsAPI.vote.mockResolvedValueOnce({ data: {} });
-    render(<FeedList />);
-
-    await waitFor(() => expect(screen.getByText('Hello Feed')).toBeInTheDocument());
-    await act(async () => {
-      await user.click(screen.getByTitle('downvote'));
-    });
-    expect(postsAPI.vote).toHaveBeenCalledWith(1, { vote_type: -1 });
   });
 
   it('renders job metadata without score', async () => {

@@ -8,14 +8,14 @@ import { timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
 
 const MAX_NESTING = 5; // Prevent runaway nesting in deep reply threads.
+const BASE_INDENT = 16;
 
-export default function CommentItem({ comment, depth = 0, onReply, onRefresh, currentUser }) {
-  const [showReplyForm, setShowReplyForm] = useState(false);
-  const [replyText, setReplyText] = useState('');
+export default function CommentItem({ comment, depth = 0, onRefresh, currentUser }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userVote, setUserVote] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,12 +24,21 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
     setIsLoggedIn(!!authStatus);
   }, []);
 
-  const handleReply = async () => {
-    if (!replyText.trim()) return;
-    await onReply(comment.id, replyText);
-    setReplyText('');
-    setShowReplyForm(false);
-  };
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUserVote(0);
+      return;
+    }
+    const fetchVote = async () => {
+      try {
+        const response = await commentsAPI.getVote(comment.id);
+        setUserVote(response.data.vote_type);
+      } catch (error) {
+        // Ignore vote lookup failures.
+      }
+    };
+    fetchVote();
+  }, [comment.id, isLoggedIn]);
 
   const handleEditSave = async () => {
     if (!editText.trim()) return;
@@ -59,75 +68,93 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
   return (
     <>
       <tr className="comtr">
-        <td className="default" style={{ paddingLeft: `${depth * 40}px` }}>
-          <span className="comment-votelinks">
-            <a
-              href="#"
-              onClick={async (e) => {
-                e.preventDefault();
-                if (!isLoggedIn) {
-                  // Preserve context so the user returns to the same comment after login.
-                  router.replace(`/login?next=/post/${comment.post_id}&vote=1&comment=${comment.id}`);
-                  return;
-                }
-                try {
-                  await commentsAPI.vote(comment.id, { vote_type: 1 });
-                } catch (error) {
-                  alert(getErrorMessage(error, 'Failed to vote. Please try again.'));
-                }
-              }}
-            >
-              <div className="votearrow" title="upvote"></div>
-            </a>
-          </span>
-          <div className="comhead">
-            <a href={`/user/${comment.username}`} className="hnuser">
-              {comment.username}
-            </a>
-            {' '}
-            <span className="age" title={new Date(comment.created_at).toISOString()}>
-              <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
-            </span>
-            {' '}
-            {isLoggedIn && depth < MAX_NESTING ? (
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowReplyForm(!showReplyForm);
-                }}
-              >
-                reply
+        <td className="default" style={{ paddingLeft: `${BASE_INDENT + depth * 40}px` }}>
+          <div className="comment-head">
+            <div className="comment-votelinks">
+              {userVote === 1 ? (
+                <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+              ) : (
+                <a
+                  href="#"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    if (!isLoggedIn) {
+                      // Preserve context so the user returns to the same comment after login.
+                      router.replace(`/login?next=/post/${comment.post_id}&vote=1&comment=${comment.id}`);
+                      return;
+                    }
+                    try {
+                      await commentsAPI.vote(comment.id, { vote_type: 1 });
+                      setUserVote(1);
+                    } catch (error) {
+                      alert(getErrorMessage(error, 'Failed to vote. Please try again.'));
+                    }
+                  }}
+                >
+                  <div className="votearrow" title="upvote"></div>
+                </a>
+              )}
+            </div>
+            <span className="comhead">
+              <a href={`/user/${comment.username}`} className="hnuser">
+                {comment.username}
               </a>
-            ) : !isLoggedIn ? (
-              <a href={`/login?next=/post/${comment.post_id}`}>reply</a>
-            ) : null}
-            {currentUser?.id === comment.user_id && (
-              <>
-                {' | '}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setIsEditing(!isEditing);
-                    setShowDeleteConfirm(false);
-                  }}
-                >
-                  edit
-                </a>
-                {' | '}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowDeleteConfirm(!showDeleteConfirm);
-                    setIsEditing(false);
-                  }}
-                >
-                  delete
-                </a>
-              </>
-            )}
+              {' '}
+              <span className="age" title={new Date(comment.created_at).toISOString()}>
+                <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
+              </span>
+              {' '}
+              {isLoggedIn && userVote !== 0 && (
+                <>
+                  <a
+                    href="#"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      try {
+                        await commentsAPI.unvote(comment.id);
+                        setUserVote(0);
+                      } catch (error) {
+                        alert(getErrorMessage(error, 'Failed to remove vote. Please try again.'));
+                      }
+                    }}
+                  >
+                    unvote
+                  </a>
+                  {' '}
+                </>
+              )}
+              {isLoggedIn && depth < MAX_NESTING ? (
+                <a href={`/reply/${comment.id}`}>reply</a>
+              ) : !isLoggedIn ? (
+                <a href={`/login?next=/reply/${comment.id}`}>reply</a>
+              ) : null}
+              {currentUser?.id === comment.user_id && (
+                <>
+                  {' | '}
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsEditing(!isEditing);
+                      setShowDeleteConfirm(false);
+                    }}
+                  >
+                    edit
+                  </a>
+                  {' | '}
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowDeleteConfirm(!showDeleteConfirm);
+                      setIsEditing(false);
+                    }}
+                  >
+                    delete
+                  </a>
+                </>
+              )}
+            </span>
           </div>
           {isEditing ? (
             <div className="comment-edit">
@@ -167,32 +194,6 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
               </div>
             </div>
           )}
-
-          {isLoggedIn && (
-            <div className={`reply-form ${showReplyForm ? 'show' : ''}`}>
-              <div className="hn-form-label reply-label">Reply:</div>
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="comment-box"
-                placeholder=""
-              />
-              <div className="reply-buttons">
-                <button
-                  onClick={handleReply}
-                  className="reply-submit"
-                >
-                  reply
-                </button>
-                <button
-                  onClick={() => setShowReplyForm(false)}
-                  className="reply-cancel"
-                >
-                  cancel
-                </button>
-              </div>
-            </div>
-          )}
         </td>
       </tr>
 
@@ -202,7 +203,6 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
           key={reply.id}
           comment={reply}
           depth={depth + 1}
-          onReply={onReply}
           onRefresh={onRefresh}
           currentUser={currentUser}
         />

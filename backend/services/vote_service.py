@@ -53,3 +53,18 @@ class VoteService:
             Vote.user_id == user_id,
             Vote.post_id == post_id
         ).order_by(Vote.created_at.desc()).first()
+
+    @staticmethod
+    def remove_vote_on_post(db: Session, post_id: int, user_id: int) -> None:
+        post = db.query(Post).filter(Post.id == post_id).first()
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        existing_vote = db.query(Vote).filter(
+            Vote.user_id == user_id,
+            Vote.post_id == post_id
+        ).first()
+        if existing_vote:
+            db.delete(existing_vote)
+            db.commit()
+            PostService.update_post_score(db, post_id)

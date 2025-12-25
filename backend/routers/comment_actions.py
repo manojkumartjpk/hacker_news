@@ -1,13 +1,23 @@
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas import CommentUpdate, Comment
+from schemas import CommentUpdate, Comment, CommentFeedItem
 from services import CommentService
 from auth.deps import get_current_user
 from models import User
 from rate_limit import rate_limit
 
 router = APIRouter()
+
+
+@router.get("/{comment_id}", response_model=CommentFeedItem)
+def get_comment_detail(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    rate_limited: bool = Depends(rate_limit())
+):
+    """Return a single comment with user and post details."""
+    return CommentService.get_comment_detail(db, comment_id)
 
 
 @router.put("/{comment_id}", response_model=Comment)

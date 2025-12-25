@@ -22,6 +22,10 @@ def test_vote_on_post_and_get_vote(client, auth_headers):
     assert get_vote_response.status_code == 200
     assert get_vote_response.json()["vote_type"] == 1
 
+    delete_vote_response = client.delete(f"/posts/{post_id}/vote", headers=auth_headers)
+    assert delete_vote_response.status_code == 200
+    assert delete_vote_response.json()["vote_type"] == 0
+
 
 @pytest.mark.unit
 def test_vote_on_post_rejects_invalid_value(client, auth_headers):

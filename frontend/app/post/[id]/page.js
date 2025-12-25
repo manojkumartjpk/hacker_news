@@ -21,6 +21,7 @@ export default function PostDetail() {
   const [currentUser, setCurrentUser] = useState(null);
   const [postError, setPostError] = useState('');
   const [commentsError, setCommentsError] = useState('');
+  const [userVote, setUserVote] = useState(0);
 
   useEffect(() => {
     // Read the auth token on the client to decide if we can show comment controls.
@@ -43,6 +44,22 @@ export default function PostDetail() {
       fetchComments();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !isLoggedIn) {
+      setUserVote(0);
+      return;
+    }
+    const fetchVote = async () => {
+      try {
+        const response = await postsAPI.getVote(id);
+        setUserVote(response.data.vote_type);
+      } catch (error) {
+        // Ignore vote lookup failures.
+      }
+    };
+    fetchVote();
+  }, [id, isLoggedIn]);
 
   const fetchPost = async () => {
     try {
@@ -90,26 +107,23 @@ export default function PostDetail() {
     }
   };
 
-  const handleReply = async (parentId, text) => {
-    const authStatus = Cookies.get('auth_status');
-    if (!authStatus) {
-      router.replace(`/login?next=/post/${id}`);
-      return;
-    }
-    try {
-      await commentsAPI.createComment(id, { text, parent_id: parentId });
-      fetchComments(); // Refresh comments
-    } catch (error) {
-      setCommentsError(getErrorMessage(error, 'Failed to post reply. Please try again.'));
-    }
-  };
-
   const handleVote = async (voteType) => {
     try {
       await postsAPI.vote(id, { vote_type: voteType });
+      setUserVote(voteType);
       fetchPost();
     } catch (error) {
       setPostError(getErrorMessage(error, 'Failed to vote. Please try again.'));
+    }
+  };
+
+  const handleUnvote = async () => {
+    try {
+      await postsAPI.unvote(id);
+      setUserVote(0);
+      fetchPost();
+    } catch (error) {
+      setPostError(getErrorMessage(error, 'Failed to remove vote. Please try again.'));
     }
   };
 
@@ -137,16 +151,20 @@ export default function PostDetail() {
             </td>
             <td style={{ verticalAlign: 'top' }} className="votelinks">
               <center>
-                <a
-                  id={`up_${post.id}`}
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleVote(1);
-                  }}
-                >
-                  <div className="votearrow" title="upvote"></div>
-                </a>
+                {userVote === 1 ? (
+                  <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                ) : (
+                  <a
+                    id={`up_${post.id}`}
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleVote(1);
+                    }}
+                  >
+                    <div className="votearrow" title="upvote"></div>
+                  </a>
+                )}
               </center>
             </td>
             <td className="title">
@@ -182,7 +200,21 @@ export default function PostDetail() {
                   <span className="age" title={new Date(post.created_at).toISOString()}>
                     {timeAgo(post.created_at)}
                   </span>{' '}
-                  <span id={`unv_${post.id}`}></span> |{' '}
+                  {isLoggedIn && userVote === 1 && (
+                    <>
+                      |{' '}
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleUnvote();
+                        }}
+                      >
+                        unvote
+                      </a>{' '}
+                    </>
+                  )}
+                  |{' '}
                   <a href={`/post/${post.id}`}>discuss</a>
                 </span>
               </td>
@@ -197,7 +229,15 @@ export default function PostDetail() {
 
       <table border="0" cellPadding="0" cellSpacing="0">
         <tbody>
-          <tr>
+          <tr className="comment-form-row">
+            <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+              <span className="rank">&nbsp;</span>
+            </td>
+            <td style={{ verticalAlign: 'top' }} className="votelinks">
+              <center>
+                <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+              </center>
+            </td>
             <td>
               {isLoggedIn ? (
                 <>
@@ -235,7 +275,6 @@ export default function PostDetail() {
               <CommentItem
                 key={comment.id}
                 comment={comment}
-                onReply={handleReply}
                 onRefresh={fetchComments}
                 currentUser={currentUser}
               />

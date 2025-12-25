@@ -88,6 +88,18 @@ def test_vote_on_comment(client, auth_headers):
     assert vote_response.status_code == 200
     assert vote_response.json()["vote_type"] == 1
 
+    get_vote_response = client.get(f"/comments/{comment_id}/vote", headers=auth_headers)
+    assert get_vote_response.status_code == 200
+    assert get_vote_response.json()["vote_type"] == 1
+
+    delete_vote_response = client.delete(f"/comments/{comment_id}/vote", headers=auth_headers)
+    assert delete_vote_response.status_code == 200
+    assert delete_vote_response.json()["vote_type"] == 0
+
+    get_vote_after_delete = client.get(f"/comments/{comment_id}/vote", headers=auth_headers)
+    assert get_vote_after_delete.status_code == 200
+    assert get_vote_after_delete.json()["vote_type"] == 0
+
 
 @pytest.mark.unit
 def test_vote_on_comment_rejects_invalid_value(client, auth_headers):
@@ -110,6 +122,31 @@ def test_vote_on_comment_rejects_invalid_value(client, auth_headers):
     )
     assert vote_response.status_code == 400
     assert vote_response.json()["detail"] == "Vote type must be 1 (upvote) or -1 (downvote)"
+
+
+def test_get_comment_detail(client, auth_headers):
+    post_response = client.post(
+        "/posts/",
+        headers=auth_headers,
+        json={"title": "Detail post", "text": "Body", "url": None},
+    )
+    assert post_response.status_code == 200
+    post_id = post_response.json()["id"]
+
+    comment_response = client.post(
+        f"/posts/{post_id}/comments",
+        headers=auth_headers,
+        json={"text": "Detail comment", "parent_id": None},
+    )
+    assert comment_response.status_code == 200
+    comment_id = comment_response.json()["id"]
+
+    detail_response = client.get(f"/comments/{comment_id}")
+    assert detail_response.status_code == 200
+    body = detail_response.json()
+    assert body["id"] == comment_id
+    assert body["post_id"] == post_id
+    assert body["text"] == "Detail comment"
 
 
 @pytest.mark.unit
