@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
 import FeedList from '../components/FeedList';
 
 export default function Home() {
-  return <FeedList defaultSort="new" />;
+  return (
+    <Suspense fallback={<div className="hn-loading">Loading...</div>}>
+      <FeedList defaultSort="new" />
+    </Suspense>
+  );
 }
