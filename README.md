@@ -43,6 +43,7 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 - **Feed cache**: Redis caches feed responses for 5 minutes (TTL). Cache is invalidated on new posts and new comments via a feed version bump.
 - **Score cache**: Post scores are cached in Redis for 5 minutes (TTL).
 - **Rate limits**: Authenticated requests are limited to 120 requests/minute per user. Unauthenticated requests are limited to 20 requests/minute per IP. Limits apply to endpoints using the rate limit dependency.
+- **Logout revocation**: Token revocation is stored in Redis. If Redis is disabled or unavailable, logout will not invalidate existing tokens.
 
 ## Setup
 
@@ -50,13 +51,15 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 
 2. Clone or navigate to the project directory.
 
-3. Run the following command to start all services (includes Caddy):
+3. Export `SECRET_KEY` (for CI, set this as a repository secret and pass it as an env var).
+
+4. Run the following command to start all services (includes Caddy):
 
    ```bash
    docker-compose up --build
    ```
 
-4. Access the application:
+5. Access the application:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - Database: localhost:5432 (PostgreSQL)
@@ -70,8 +73,8 @@ docker compose up --build backend frontend postgres redis
 ```
 
 ### Environment variables
-- Backend (Docker): `backend/.env` uses container hostnames and includes `SECRET_KEY`.
-- Backend (local dev): set `POSTGRES_URL=postgresql://user:password@localhost:5432/hackernews`, `REDIS_URL=redis://localhost:6379`, and `SECRET_KEY`.
+- Backend (Docker): `backend/.env` uses container hostnames. `SECRET_KEY` must be set via your environment or repository secrets.
+- Backend (local dev): copy `backend/.env.example` to `backend/.env` and set `SECRET_KEY`.
 - Frontend: `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8000`).
 
 ## Development
@@ -100,6 +103,12 @@ docker compose up --build
 ```
 
 ## Tests (Dockerized by default)
+
+Set `SECRET_KEY` before running tests:
+
+```bash
+export SECRET_KEY=your-secret
+```
 
 Run all tests in Docker (backend + frontend):
 
@@ -166,26 +175,33 @@ Notes:
 ### Authentication
 - `POST /auth/register` - Register new user
 - `POST /auth/login` - Login user
+- `POST /auth/logout` - Revoke the current token
+- `GET /auth/username-available` - Check username availability
 - `GET /auth/me` - Current user profile
-- Logout is handled client-side by clearing the JWT cookie.
+- Logout revokes the access token and the client clears the JWT cookie.
+  - Cookie auth requires `X-CSRF-Token` for POST/PUT/PATCH/DELETE.
 
 ### Posts
 - `GET /posts/` - Get posts feed (with pagination and sorting)
 - `POST /posts/` - Create new post
+- `GET /posts/search` - Search posts
 - `GET /posts/{post_id}` - Get single post
 - `PUT /posts/{post_id}` - Update post
 - `DELETE /posts/{post_id}` - Delete post
 - `POST /posts/{post_id}/vote` - Vote on post
+- `GET /posts/{post_id}/vote` - Get current user's vote
 
 ### Comments
 - `GET /posts/{post_id}/comments` - Get comments for post
 - `POST /posts/{post_id}/comments` - Create comment
 - `PUT /posts/{comment_id}` - Update comment
 - `DELETE /posts/{comment_id}` - Delete comment
+- `GET /comments/recent` - Recent comments feed
+- `POST /comments/{comment_id}/vote` - Vote on comment
 
 ### Notifications
 - `GET /notifications/` - Get user notifications
-- `PUT /notifications/{id}/read` - Mark notification as read
+- `PUT /notifications/{notification_id}/read` - Mark notification as read
 - `GET /notifications/unread/count` - Get unread count
 
 ## Database Schema
@@ -195,13 +211,13 @@ The application uses the following main entities:
 - **Posts**: Stories submitted by users
 - **Comments**: Threaded discussions on posts
 - **Votes**: User votes on posts
+- **CommentVotes**: User votes on comments
 - **Notifications**: User notifications for interactions
 
 ## AI Assistance
 - ChatGPT/Codex:
-   - Used for front end component scaffolding
+   - Frontend component scaffolding
    - Backend API route scaffolding
-   - Writing unit tests and e2e tests
-   - Generating documentation 
-   - Code review suggestions
-   - Code refactoring suggestions
+   - Unit and e2e test creation
+   - Documentation drafting
+   - Code review and refactoring suggestions

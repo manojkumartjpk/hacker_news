@@ -10,6 +10,8 @@ services:
         condition: service_healthy
     env_file:
       - ./backend/.env.test
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
     command: pytest
 
   backend:
@@ -23,6 +25,8 @@ services:
         condition: service_healthy
     env_file:
       - ./backend/.env.test
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000').read()"]
       interval: 5s
@@ -33,6 +37,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://frontend:3000
       target: builder
     command: npm test
 
@@ -40,8 +46,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://frontend:3000
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=http://frontend:3000
     depends_on:
       backend:
         condition: service_healthy

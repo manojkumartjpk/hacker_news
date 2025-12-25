@@ -20,8 +20,8 @@ export default function CommentItem({ comment, depth = 0, onReply, onRefresh, cu
 
   useEffect(() => {
     // Client-side auth check to toggle reply/vote affordances.
-    const token = Cookies.get('access_token');
-    setIsLoggedIn(!!token);
+    const authStatus = Cookies.get('auth_status');
+    setIsLoggedIn(!!authStatus);
   }, []);
 
   const handleReply = async () => {

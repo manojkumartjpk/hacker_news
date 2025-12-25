@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Cookies from 'js-cookie';
 import { authAPI } from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
 import InlineError from './InlineError';
@@ -33,8 +32,7 @@ export default function LoginPageClient() {
     setLoading(true);
 
     try {
-      const response = await authAPI.login(formData);
-      Cookies.set('access_token', response.data.access_token, { expires: 1/24 }); // 1 hour
+      await authAPI.login(formData);
       const next = searchParams.get('next');
       const safeNext = getSafeNext(next);
       const vote = searchParams.get('vote');

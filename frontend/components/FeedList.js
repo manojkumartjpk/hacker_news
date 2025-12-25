@@ -30,8 +30,8 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
   }, [sort, page, postType]);
 
   useEffect(() => {
-    const token = Cookies.get('access_token');
-    setIsLoggedIn(!!token);
+    const authStatus = Cookies.get('auth_status');
+    setIsLoggedIn(!!authStatus);
   }, []);
 
   const fetchPosts = async () => {

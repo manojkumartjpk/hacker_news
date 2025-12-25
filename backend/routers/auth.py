@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from datetime import timedelta
+import secrets
 from database import get_db
-from auth import create_access_token
-from auth.deps import get_current_user
-from schemas import UserCreate, User, Token, UserLogin, Availability
+from auth import create_access_token, revoke_token, verify_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from auth.deps import get_current_user, get_current_token
+from schemas import UserCreate, User, Token, UserLogin, Availability, Message
 from services import UserService
 from rate_limit import rate_limit
 
@@ -22,6 +23,7 @@ def register(
 @router.post("/login", response_model=Token)
 def login(
     user_credentials: UserLogin,
+    response: Response,
     db: Session = Depends(get_db),
     rate_limited: bool = Depends(rate_limit())
 ):
@@ -33,10 +35,37 @@ def login(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=30)
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
+    csrf_token = secrets.token_urlsafe(32)
+    max_age = ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    response.set_cookie(
+        "access_token",
+        access_token,
+        httponly=True,
+        samesite="lax",
+        max_age=max_age,
+        secure=False,
+    )
+    response.set_cookie(
+        "csrf_token",
+        csrf_token,
+        httponly=False,
+        samesite="lax",
+        max_age=max_age,
+        secure=False,
+    )
+    response.set_cookie(
+        "auth_status",
+        "1",
+        httponly=False,
+        samesite="lax",
+        max_age=max_age,
+        secure=False,
+    )
+    response.headers["X-CSRF-Token"] = csrf_token
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/username-available", response_model=Availability)
@@ -57,3 +86,23 @@ def get_me(
 ):
     """Return the currently authenticated user."""
     return current_user
+
+
+@router.post("/logout", response_model=Message)
+def logout(
+    response: Response,
+    token: str = Depends(get_current_token),
+    rate_limited: bool = Depends(rate_limit())
+):
+    """Revoke the current access token."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    verify_token(token, credentials_exception)
+    revoke_token(token)
+    response.delete_cookie("access_token")
+    response.delete_cookie("csrf_token")
+    response.delete_cookie("auth_status")
+    return {"message": "Logged out"}

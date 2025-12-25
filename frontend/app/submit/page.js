@@ -20,8 +20,8 @@ export default function Submit() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = Cookies.get('access_token');
-    if (!token) {
+    const authStatus = Cookies.get('auth_status');
+    if (!authStatus) {
       router.replace('/login?next=/submit');
       return;
     }

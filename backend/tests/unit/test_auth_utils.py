@@ -1,7 +1,14 @@
 import pytest
 from fastapi import HTTPException
 
-from auth import create_access_token, verify_token, get_password_hash, verify_password
+from auth import (
+    create_access_token,
+    verify_token,
+    get_password_hash,
+    verify_password,
+    revoke_token,
+    is_token_revoked,
+)
 
 
 @pytest.mark.unit
@@ -26,3 +33,15 @@ def test_verify_token_rejects_invalid_token():
     credentials_exception = HTTPException(status_code=401, detail="invalid")
     with pytest.raises(HTTPException):
         verify_token("not-a-token", credentials_exception)
+
+
+@pytest.mark.unit
+def test_revoke_token_marks_token_invalid():
+    token = create_access_token({"sub": "alice"})
+    assert is_token_revoked(token) is False
+    revoke_token(token)
+    assert is_token_revoked(token) is True
+
+    credentials_exception = HTTPException(status_code=401, detail="invalid")
+    with pytest.raises(HTTPException):
+        verify_token(token, credentials_exception)

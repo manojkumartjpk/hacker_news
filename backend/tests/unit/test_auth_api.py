@@ -86,3 +86,21 @@ def test_register_rejects_short_password(client):
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Password must be at least 9 characters."
+
+
+@pytest.mark.unit
+def test_logout_revokes_token(client, make_user):
+    user = make_user(username="logout_user", email="logout@example.com")
+    login_response = client.post(
+        "/auth/login",
+        json={"username": user["username"], "password": user["password"]},
+    )
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    logout_response = client.post("/auth/logout", headers=headers)
+    assert logout_response.status_code == 200
+    assert logout_response.json()["message"] == "Logged out"
+
+    me_response = client.get("/auth/me", headers=headers)
+    assert me_response.status_code == 401

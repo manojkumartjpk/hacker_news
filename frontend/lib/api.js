@@ -5,13 +5,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add CSRF token for unsafe methods.
 api.interceptors.request.use((config) => {
-  const token = Cookies.get('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const method = config.method?.toUpperCase();
+  if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const csrfToken = Cookies.get('csrf_token');
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
   }
   return config;
 });
@@ -21,7 +25,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      Cookies.remove('access_token');
+      Cookies.remove('auth_status');
+      Cookies.remove('csrf_token');
       // Redirect to login if on client side
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
@@ -34,6 +39,7 @@ api.interceptors.response.use(
 export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   login: (credentials) => api.post('/auth/login', credentials),
+  logout: () => api.post('/auth/logout'),
   usernameAvailable: (username) => api.get('/auth/username-available', { params: { username } }),
   me: () => api.get('/auth/me'),
 };

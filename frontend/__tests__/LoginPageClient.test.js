@@ -2,15 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act } from 'react';
 import LoginPageClient from '../components/LoginPageClient';
-import Cookies from 'js-cookie';
 import { authAPI, postsAPI, commentsAPI } from '../lib/api';
 
 let searchParamsValue = '';
 let push;
-
-jest.mock('js-cookie', () => ({
-  set: jest.fn(),
-}));
 
 jest.mock('../lib/api', () => ({
   authAPI: {
@@ -58,7 +53,6 @@ describe('LoginPageClient', () => {
     await fillAndSubmit();
 
     await waitFor(() => expect(authAPI.login).toHaveBeenCalled());
-    expect(Cookies.set).toHaveBeenCalledWith('access_token', 'token', { expires: 1 / 24 });
     expect(push).toHaveBeenCalledWith('/submit');
   });
 

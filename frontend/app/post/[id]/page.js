@@ -24,13 +24,14 @@ export default function PostDetail() {
 
   useEffect(() => {
     // Read the auth token on the client to decide if we can show comment controls.
-    const token = Cookies.get('access_token');
-    setIsLoggedIn(!!token);
-    if (token) {
+    const authStatus = Cookies.get('auth_status');
+    setIsLoggedIn(!!authStatus);
+    if (authStatus) {
       authAPI.me().then((res) => {
         setCurrentUser(res.data);
       }).catch(() => {
         setCurrentUser(null);
+        setIsLoggedIn(false);
       });
     }
   }, []);
@@ -70,8 +71,8 @@ export default function PostDetail() {
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    const token = Cookies.get('access_token');
-    if (!token) {
+    const authStatus = Cookies.get('auth_status');
+    if (!authStatus) {
       // Send the user to login and return to this post afterward.
       router.replace(`/login?next=/post/${id}`);
       return;
@@ -90,8 +91,8 @@ export default function PostDetail() {
   };
 
   const handleReply = async (parentId, text) => {
-    const token = Cookies.get('access_token');
-    if (!token) {
+    const authStatus = Cookies.get('auth_status');
+    if (!authStatus) {
       router.replace(`/login?next=/post/${id}`);
       return;
     }

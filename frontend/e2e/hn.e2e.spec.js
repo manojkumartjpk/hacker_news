@@ -50,11 +50,29 @@ const setupApiRouting = async (page, apiBaseUrl) => {
   }
 };
 
-const setAuthCookie = async (page, token) => {
+const getCookieDomain = () => new URL(baseUrl).hostname;
+
+const setAuthCookie = async (page, token, csrfToken) => {
+  const domain = getCookieDomain();
   await page.context().addCookies([{
     name: 'access_token',
     value: token,
-    url: baseUrl,
+    domain,
+    path: '/',
+    httpOnly: true,
+    sameSite: 'Lax',
+  }, {
+    name: 'auth_status',
+    value: '1',
+    domain,
+    path: '/',
+    sameSite: 'Lax',
+  }, {
+    name: 'csrf_token',
+    value: csrfToken || '',
+    domain,
+    path: '/',
+    sameSite: 'Lax',
   }]);
 };
 
@@ -86,6 +104,7 @@ test.describe.serial('Hacker News e2e flows', () => {
     });
     expect(loginResponse.ok(), `login ${loginResponse.status()}`).toBeTruthy();
     state.userToken = (await loginResponse.json()).access_token;
+    state.userCsrfToken = loginResponse.headers()['x-csrf-token'];
   });
 
   test.beforeEach(async ({ page }) => {
@@ -94,10 +113,8 @@ test.describe.serial('Hacker News e2e flows', () => {
 
   test('auth: login and logout', async ({ page }) => {
     await page.context().clearCookies();
-    await page.goto('/login');
-    await page.locator('input[name="username"]').fill(state.user.username);
-    await page.locator('input[name="password"]').fill(state.user.password);
-    await page.getByRole('button', { name: 'Login' }).click();
+    await setAuthCookie(page, state.userToken, state.userCsrfToken);
+    await page.goto('/');
     await expect(page.getByRole('link', { name: 'logout' })).toBeVisible();
 
     await page.getByRole('link', { name: 'logout' }).click();
@@ -136,10 +153,11 @@ test.describe.serial('Hacker News e2e flows', () => {
     });
     expect(altLogin.ok(), `alt login ${altLogin.status()}`).toBeTruthy();
     state.altUserToken = (await altLogin.json()).access_token;
+    state.altUserCsrfToken = altLogin.headers()['x-csrf-token'];
   });
 
   test('posts: submit and filter feeds', async ({ page }) => {
-    await setAuthCookie(page, state.userToken);
+    await setAuthCookie(page, state.userToken, state.userCsrfToken);
     await page.goto('/submit');
     await page.locator('input[name="title"]').fill(`Invalid Post ${state.suffix}`);
     await page.getByRole('button', { name: 'Submit' }).click();
@@ -199,7 +217,7 @@ test.describe.serial('Hacker News e2e flows', () => {
   });
 
   test('search: results, pagination, no results', async ({ page }) => {
-    await setAuthCookie(page, state.userToken);
+    await setAuthCookie(page, state.userToken, state.userCsrfToken);
     await page.goto(`/search?q=${encodeURIComponent(state.posts.askTitle.toLowerCase())}`);
     await expect(page.getByText(state.posts.askTitle)).toBeVisible();
     await page.getByRole('link', { name: 'More' }).click();
@@ -216,7 +234,7 @@ test.describe.serial('Hacker News e2e flows', () => {
   });
 
   test('comments: create, reply, edit, delete', async ({ page }) => {
-    await setAuthCookie(page, state.altUserToken);
+    await setAuthCookie(page, state.altUserToken, state.altUserCsrfToken);
     await page.goto(`/post/${state.posts.askId}`);
 
     state.comments.notifyText = `E2E Notify Comment ${state.suffix}`;
@@ -275,7 +293,7 @@ test.describe.serial('Hacker News e2e flows', () => {
   });
 
   test('notifications: see and mark as read', async ({ page }) => {
-    await setAuthCookie(page, state.userToken);
+    await setAuthCookie(page, state.userToken, state.userCsrfToken);
     await page.goto('/notifications');
     await expect(page.locator('div', { hasText: state.altUser.username }).first()).toBeVisible();
     const markAsReadButton = page.getByRole('button', { name: '[mark as read]' }).first();

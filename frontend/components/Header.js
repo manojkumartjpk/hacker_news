@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
-import { notificationsAPI } from '../lib/api';
+import { notificationsAPI, authAPI } from '../lib/api';
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -14,10 +14,10 @@ export default function Header() {
   const sort = searchParams.get('sort') || 'new';
 
   useEffect(() => {
-    const token = Cookies.get('access_token');
-    setIsLoggedIn(!!token);
+    const authStatus = Cookies.get('auth_status');
+    setIsLoggedIn(!!authStatus);
 
-    if (token) {
+    if (authStatus) {
       fetchUnreadCount();
     }
   }, [pathname]);
@@ -31,8 +31,14 @@ export default function Header() {
     }
   };
 
-  const handleLogout = () => {
-    Cookies.remove('access_token');
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
+    Cookies.remove('auth_status');
+    Cookies.remove('csrf_token');
     setIsLoggedIn(false);
     setUnreadCount(0);
     window.location.href = '/';

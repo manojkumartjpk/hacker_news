@@ -3,11 +3,13 @@
 Base URL: `http://localhost:8000`
 
 ## Authentication
-Protected endpoints require a bearer token header:
+Protected endpoints require a bearer token header (or an auth cookie):
 
 `Authorization: Bearer <access_token>`
 
-Logout is handled client-side by clearing the JWT cookie (no server logout endpoint).
+When using auth cookies, include `X-CSRF-Token` for POST/PUT/PATCH/DELETE (token is set in the `csrf_token` cookie).
+
+Logout revokes the access token and the client should also clear the JWT cookie.
 
 ## Auth
 
@@ -73,6 +75,17 @@ Response:
   "username": "string",
   "email": "string",
   "created_at": "string"
+}
+```
+
+`POST /auth/logout`
+
+Auth: required
+
+Response:
+```json
+{
+  "message": "Logged out"
 }
 ```
 
