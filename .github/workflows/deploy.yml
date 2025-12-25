@@ -1,8 +1,7 @@
 name: Deploy
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -18,5 +17,4 @@ jobs:
             set -e
             cd /root/hacker_news
             git pull
-            docker-compose down
-            docker-compose up -d --build
+            docker compose up -d --build --remove-orphans
