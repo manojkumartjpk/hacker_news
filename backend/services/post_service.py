@@ -207,7 +207,12 @@ class PostService:
         
         # Get username
         user = db.query(User).filter(User.id == post.user_id).first()
+
+        # Invalidate feeds to reflect updated posts.
+        PostService.bump_feed_cache_version()
         
+        comment_count = db.query(func.count(Comment.id)).filter(Comment.post_id == post.id).scalar() or 0
+
         return {
             "id": post.id,
             "title": post.title,
@@ -215,6 +220,7 @@ class PostService:
             "text": post.text,
             "post_type": post.post_type,
             "score": post.score,
+            "comment_count": comment_count,
             "user_id": post.user_id,
             "created_at": PostService._serialize_datetime(post.created_at),
             "username": user.username
@@ -230,6 +236,7 @@ class PostService:
 
         db.delete(post)
         db.commit()
+        PostService.bump_feed_cache_version()
 
     @staticmethod
     def update_post_score(db: Session, post_id: int):

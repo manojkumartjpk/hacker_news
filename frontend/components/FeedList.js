@@ -7,6 +7,8 @@ import { postsAPI } from '../lib/api';
 import Cookies from 'js-cookie';
 import { commentsLabel, pointsLabel, safeHostname, timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
+import InlineError from './InlineError';
+import { getPagination } from '../lib/pagination';
 
 const POSTS_PER_PAGE = 30;
 
@@ -15,9 +17,8 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
   const pathname = usePathname();
   const router = useRouter();
   const sortParam = searchParams.get('sort') || defaultSort;
-  const pageParam = Number.parseInt(searchParams.get('p') || '1', 10);
   const sort = ['new', 'top', 'best'].includes(sortParam) ? sortParam : defaultSort;
-  const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
+  const { page, skip } = getPagination(searchParams, POSTS_PER_PAGE);
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,6 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
     try {
       setLoading(true);
       setError('');
-      const skip = (page - 1) * POSTS_PER_PAGE;
       const params = { sort, limit: POSTS_PER_PAGE, skip };
       if (postType) {
         params.post_type = postType;
@@ -71,7 +71,7 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
   }
 
   if (error) {
-    return <div className="hn-error">{error}</div>;
+    return <InlineError message={error} />;
   }
 
   if (!posts.length) {

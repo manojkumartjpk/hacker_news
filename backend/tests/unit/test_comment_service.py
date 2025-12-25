@@ -1,5 +1,6 @@
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from auth import get_password_hash
 from models import User, Post, Comment, Notification
@@ -70,9 +71,8 @@ def test_create_comment_rejects_empty_text(db_session):
     db_session.commit()
     db_session.refresh(post)
 
-    with pytest.raises(HTTPException) as exc:
-        CommentService.create_comment(db_session, CommentCreate(text="   ", parent_id=None), post.id, user.id)
-    assert exc.value.status_code == 400
+    with pytest.raises(ValidationError):
+        CommentCreate(text="   ", parent_id=None)
 
 
 @pytest.mark.unit

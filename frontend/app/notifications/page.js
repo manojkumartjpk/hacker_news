@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { notificationsAPI } from '../../lib/api';
 import { timeAgo } from '../../lib/format';
 import { getErrorMessage } from '../../lib/errors';
+import InlineError from '../../components/InlineError';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
@@ -43,7 +44,7 @@ export default function Notifications() {
   }
 
   if (error) {
-    return <div className="hn-error">{error}</div>;
+    return <InlineError message={error} />;
   }
 
   return (

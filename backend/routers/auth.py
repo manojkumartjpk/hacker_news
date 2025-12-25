@@ -4,7 +4,7 @@ from datetime import timedelta
 from database import get_db
 from auth import create_access_token
 from auth.deps import get_current_user
-from schemas import UserCreate, User, Token, UserLogin
+from schemas import UserCreate, User, Token, UserLogin, Availability
 from services import UserService
 from rate_limit import rate_limit
 
@@ -39,7 +39,7 @@ def login(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/username-available")
+@router.get("/username-available", response_model=Availability)
 def username_available(
     username: str,
     db: Session = Depends(get_db),

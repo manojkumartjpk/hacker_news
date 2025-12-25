@@ -7,6 +7,7 @@ import CommentItem from '../../../components/CommentItem';
 import { postsAPI, commentsAPI, authAPI } from '../../../lib/api';
 import { pointsLabel, safeHostname, timeAgo } from '../../../lib/format';
 import { getErrorMessage } from '../../../lib/errors';
+import InlineError from '../../../components/InlineError';
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -116,7 +117,7 @@ export default function PostDetail() {
   }
 
   if (postError) {
-    return <div className="hn-error">{postError}</div>;
+    return <InlineError message={postError} />;
   }
 
   if (!post) {
@@ -191,11 +192,7 @@ export default function PostDetail() {
 
       <br />
 
-      {commentsError && (
-        <div className="hn-error">
-          {commentsError}
-        </div>
-      )}
+      <InlineError message={commentsError} />
 
       <table border="0" cellPadding="0" cellSpacing="0">
         <tbody>

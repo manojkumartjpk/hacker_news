@@ -29,7 +29,6 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 
 ### Frontend
 - **Framework**: Next.js 15
-- **Styling**: Tailwind CSS
 - **HTTP Client**: Axios
 - **State Management**: React hooks
 
@@ -51,7 +50,7 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 
 2. Clone or navigate to the project directory.
 
-3. Run the following command to start all services:
+3. Run the following command to start all services (includes Caddy):
 
    ```bash
    docker-compose up --build
@@ -62,6 +61,18 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
    - Backend API: http://localhost:8000
    - Database: localhost:5432 (PostgreSQL)
    - Cache: localhost:6379 (Redis)
+
+### Local run without Caddy (recommended)
+Start the stack without the reverse proxy:
+
+```bash
+docker compose up --build backend frontend postgres redis
+```
+
+### Environment variables
+- Backend (Docker): `backend/.env` uses container hostnames and includes `SECRET_KEY`.
+- Backend (local dev): set `POSTGRES_URL=postgresql://user:password@localhost:5432/hackernews`, `REDIS_URL=redis://localhost:6379`, and `SECRET_KEY`.
+- Frontend: `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8000`).
 
 ## Development
 
@@ -76,6 +87,8 @@ npm run dev
 ```bash
 cd backend
 pip install -r requirements.txt
+export POSTGRES_URL=postgresql://user:password@localhost:5432/hackernews
+export REDIS_URL=redis://localhost:6379
 uvicorn main:app --reload
 ```
 
@@ -153,6 +166,8 @@ Notes:
 ### Authentication
 - `POST /auth/register` - Register new user
 - `POST /auth/login` - Login user
+- `GET /auth/me` - Current user profile
+- Logout is handled client-side by clearing the JWT cookie.
 
 ### Posts
 - `GET /posts/` - Get posts feed (with pagination and sorting)
@@ -181,5 +196,12 @@ The application uses the following main entities:
 - **Comments**: Threaded discussions on posts
 - **Votes**: User votes on posts
 - **Notifications**: User notifications for interactions
-- Add voting system
-- Improve UI/UX
+
+## AI Assistance
+- ChatGPT/Codex:
+   - Used for front end component scaffolding
+   - Backend API route scaffolding
+   - Writing unit tests and e2e tests
+   - Generating documentation 
+   - Code review suggestions
+   - Code refactoring suggestions

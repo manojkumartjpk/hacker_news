@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '../../lib/api';
 import { getErrorMessage } from '../../lib/errors';
+import InlineError from '../../components/InlineError';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -95,11 +96,7 @@ export default function Register() {
         </tr>
         <tr>
           <td>
-            {error && (
-              <div className="hn-error">
-                {error}
-              </div>
-            )}
+            <InlineError message={error} />
             {success && (
               <div className="hn-success">
                 {success}

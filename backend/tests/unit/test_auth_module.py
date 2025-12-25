@@ -19,7 +19,7 @@ def test_auth_module_token_round_trip():
     token = auth_module.create_access_token({"sub": "tester"})
     credentials_exception = HTTPException(status_code=401, detail="invalid")
     data = auth_module.verify_token(token, credentials_exception)
-    assert data["username"] == "tester"
+    assert data.username == "tester"
 
 
 @pytest.mark.unit
@@ -44,7 +44,7 @@ def test_auth_module_token_default_expiry_and_missing_sub():
     token = auth_module.create_access_token({"sub": "tester"}, expires_delta=None)
     credentials_exception = HTTPException(status_code=401, detail="invalid")
     data = auth_module.verify_token(token, credentials_exception)
-    assert data["username"] == "tester"
+    assert data.username == "tester"
 
     token_without_sub = auth_module.create_access_token({})
     with pytest.raises(HTTPException):
@@ -58,4 +58,4 @@ def test_auth_module_token_with_custom_expiry():
     )
     credentials_exception = HTTPException(status_code=401, detail="invalid")
     data = auth_module.verify_token(token, credentials_exception)
-    assert data["username"] == "tester"
+    assert data.username == "tester"

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { postsAPI } from '../../lib/api';
 import { getErrorMessage } from '../../lib/errors';
+import InlineError from '../../components/InlineError';
 
 export default function Submit() {
   const [formData, setFormData] = useState({
@@ -68,11 +69,7 @@ export default function Submit() {
         </tr>
         <tr>
           <td>
-            {error && (
-              <div className="hn-error">
-                {error}
-              </div>
-            )}
+            <InlineError message={error} />
 
             <form onSubmit={handleSubmit} className="hn-form">
               <table border="0" cellPadding="0" cellSpacing="0" className="hn-form-table">

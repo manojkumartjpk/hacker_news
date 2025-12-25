@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { commentsAPI } from '../lib/api';
 import { timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
+import InlineError from './InlineError';
+import { getPagination } from '../lib/pagination';
 
 const COMMENTS_PER_PAGE = 30;
 
@@ -14,8 +16,7 @@ export default function CommentsPageClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const searchParams = useSearchParams();
-  const pageParam = Number.parseInt(searchParams.get('p') || '1', 10);
-  const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
+  const { page, skip } = getPagination(searchParams, COMMENTS_PER_PAGE);
 
   useEffect(() => {
     fetchComments();
@@ -25,7 +26,6 @@ export default function CommentsPageClient() {
     try {
       setLoading(true);
       setError('');
-      const skip = (page - 1) * COMMENTS_PER_PAGE;
       const response = await commentsAPI.getRecentComments({ limit: COMMENTS_PER_PAGE, skip });
       setComments(response.data);
     } catch (error) {
@@ -40,7 +40,7 @@ export default function CommentsPageClient() {
   }
 
   if (error) {
-    return <div className="hn-error">{error}</div>;
+    return <InlineError message={error} />;
   }
 
   if (!comments.length) {

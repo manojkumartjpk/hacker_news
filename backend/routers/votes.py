@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas import VoteCreate, Vote
+from schemas import VoteCreate, Vote, VoteStatus
 from services import VoteService
 from auth.deps import get_current_user
 from models import User
@@ -22,7 +22,7 @@ def vote_on_post(
         raise HTTPException(status_code=400, detail="Vote type must be 1 (upvote) or -1 (downvote)")
     return VoteService.vote_on_post(db, post_id, vote, current_user.id)
 
-@router.get("/{post_id}/vote")
+@router.get("/{post_id}/vote", response_model=VoteStatus)
 def get_user_vote_on_post(
     post_id: int,
     db: Session = Depends(get_db),

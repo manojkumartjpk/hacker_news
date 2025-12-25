@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
-from schemas import Notification
+from schemas import Notification, Message, UnreadCount
 from services import NotificationService
 from auth.deps import get_current_user
 from models import User
@@ -21,7 +21,7 @@ def get_notifications(
     """List notifications for the authenticated user."""
     return NotificationService.get_user_notifications(db, current_user.id, skip=skip, limit=limit)
 
-@router.put("/{notification_id}/read")
+@router.put("/{notification_id}/read", response_model=Message)
 def mark_as_read(
     notification_id: int,
     db: Session = Depends(get_db),
@@ -32,7 +32,7 @@ def mark_as_read(
     NotificationService.mark_notification_as_read(db, notification_id, current_user.id)
     return {"message": "Notification marked as read"}
 
-@router.get("/unread/count")
+@router.get("/unread/count", response_model=UnreadCount)
 def get_unread_count(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

@@ -39,3 +39,9 @@ def test_vote_on_post_rejects_invalid_value(client, auth_headers):
     )
     assert vote_response.status_code == 400
     assert vote_response.json()["detail"] == "Vote type must be 1 (upvote) or -1 (downvote)"
+
+
+@pytest.mark.unit
+def test_get_vote_requires_auth(client):
+    response = client.get("/posts/1/vote")
+    assert response.status_code == 401

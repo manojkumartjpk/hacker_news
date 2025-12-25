@@ -47,3 +47,42 @@ def test_username_available(client, make_user):
 def test_me_requires_auth(client):
     response = client.get("/auth/me")
     assert response.status_code == 401
+
+
+@pytest.mark.unit
+def test_me_returns_user(client, auth_headers):
+    response = client.get("/auth/me", headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["username"] == "alice"
+
+
+@pytest.mark.unit
+def test_register_rejects_duplicate_username(client, make_user):
+    make_user(username="alice", email="alice@example.com")
+    response = client.post(
+        "/auth/register",
+        json={"username": "alice", "email": "other@example.com", "password": "Password1!"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Username already registered"
+
+
+@pytest.mark.unit
+def test_register_rejects_duplicate_email(client, make_user):
+    make_user(username="alice", email="alice@example.com")
+    response = client.post(
+        "/auth/register",
+        json={"username": "different", "email": "alice@example.com", "password": "Password1!"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Email already registered"
+
+
+@pytest.mark.unit
+def test_register_rejects_short_password(client):
+    response = client.post(
+        "/auth/register",
+        json={"username": "shorty", "email": "shorty@example.com", "password": "Short1!"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Password must be at least 9 characters."

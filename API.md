@@ -3,350 +3,431 @@
 Base URL: `http://localhost:8000`
 
 ## Authentication
-Protected endpoints require a bearer token:
+Protected endpoints require a bearer token header:
 
 `Authorization: Bearer <access_token>`
 
+Logout is handled client-side by clearing the JWT cookie (no server logout endpoint).
+
 ## Auth
 
-POST /auth/register
+`POST /auth/register`
+
 Request body:
+```json
 {
-  username: string,
-  email: string,
-  password: string
+  "username": "string",
+  "email": "string",
+  "password": "string"
 }
+```
 
 Response:
+```json
 {
-  id: integer,
-  username: string,
-  email: string,
-  created_at: string
+  "id": 1,
+  "username": "string",
+  "email": "string",
+  "created_at": "string"
 }
+```
 
-POST /auth/login
+`POST /auth/login`
+
 Request body:
+```json
 {
-  username: string,
-  password: string
+  "username": "string",
+  "password": "string"
 }
+```
 
 Response:
+```json
 {
-  access_token: string,
-  token_type: "bearer"
+  "access_token": "string",
+  "token_type": "bearer"
 }
+```
 
-GET /auth/username-available
+`GET /auth/username-available`
+
 Request params:
-- username: string (required)
+- `username`: string (required)
 
 Response:
+```json
 {
-  available: boolean
+  "available": true
 }
+```
 
-GET /auth/me
+`GET /auth/me`
+
 Auth: required
 
 Response:
+```json
 {
-  id: integer,
-  username: string,
-  email: string,
-  created_at: string
+  "id": 1,
+  "username": "string",
+  "email": "string",
+  "created_at": "string"
 }
+```
 
 ## Posts
 
-POST /posts
+`POST /posts`
+
 Auth: required
+
 Request body:
+```json
 {
-  title: string,
-  url: string | null,
-  text: string | null,
-  post_type: string (optional, default: "story", options: "story", "ask", "show", "job")
+  "title": "string",
+  "url": "string | null",
+  "text": "string | null",
+  "post_type": "story | ask | show | job"
 }
+```
 
 Response:
+```json
 {
-  id: integer,
-  title: string,
-  url: string | null,
-  text: string | null,
-  post_type: string,
-  score: integer,
-  comment_count: integer,
-  user_id: integer,
-  username: string,
-  created_at: string
+  "id": 1,
+  "title": "string",
+  "url": "string | null",
+  "text": "string | null",
+  "post_type": "string",
+  "score": 0,
+  "comment_count": 0,
+  "user_id": 1,
+  "username": "string",
+  "created_at": "string"
 }
+```
 
-GET /posts
+`GET /posts`
+
 Request params:
-- skip: integer (optional, default: 0)
-- limit: integer (optional, default: 10, max: 100)
-- sort: string (optional, default: "new", options: "new", "top", "best")
-- post_type: string (optional, options: "story", "ask", "show", "job")
+- `skip`: integer (optional, default: 0)
+- `limit`: integer (optional, default: 10, max: 100)
+- `sort`: string (optional, default: `new`, options: `new`, `top`, `best`)
+- `post_type`: string (optional, options: `story`, `ask`, `show`, `job`)
 
 Response:
+```json
 [
   {
-    id: integer,
-    title: string,
-    url: string | null,
-    text: string | null,
-    post_type: string,
-    score: integer,
-    comment_count: integer,
-    user_id: integer,
-    username: string,
-    created_at: string
+    "id": 1,
+    "title": "string",
+    "url": "string | null",
+    "text": "string | null",
+    "post_type": "string",
+    "score": 0,
+    "comment_count": 0,
+    "user_id": 1,
+    "username": "string",
+    "created_at": "string"
   }
 ]
+```
 
-GET /posts/search
+`GET /posts/search`
+
 Request params:
-- q: string (optional, default: "")
-- skip: integer (optional, default: 0)
-- limit: integer (optional, default: 30, max: 100)
+- `q`: string (optional, default: "")
+- `skip`: integer (optional, default: 0)
+- `limit`: integer (optional, default: 30, max: 100)
 
 Response:
+```json
 [
   {
-    id: integer,
-    title: string,
-    url: string | null,
-    text: string | null,
-    post_type: string,
-    score: integer,
-    comment_count: integer,
-    user_id: integer,
-    username: string,
-    created_at: string
+    "id": 1,
+    "title": "string",
+    "url": "string | null",
+    "text": "string | null",
+    "post_type": "string",
+    "score": 0,
+    "comment_count": 0,
+    "user_id": 1,
+    "username": "string",
+    "created_at": "string"
   }
 ]
+```
 
-GET /posts/{post_id}
+`GET /posts/{post_id}`
+
 Response:
+```json
 {
-  id: integer,
-  title: string,
-  url: string | null,
-  text: string | null,
-  post_type: string,
-  score: integer,
-  comment_count: integer,
-  user_id: integer,
-  username: string,
-  created_at: string
+  "id": 1,
+  "title": "string",
+  "url": "string | null",
+  "text": "string | null",
+  "post_type": "string",
+  "score": 0,
+  "comment_count": 0,
+  "user_id": 1,
+  "username": "string",
+  "created_at": "string"
 }
+```
 
-PUT /posts/{post_id}
+`PUT /posts/{post_id}`
+
 Auth: required
+
 Request body:
+```json
 {
-  title: string | null,
-  url: string | null,
-  text: string | null,
-  post_type: string | null
+  "title": "string | null",
+  "url": "string | null",
+  "text": "string | null",
+  "post_type": "string | null"
 }
+```
 
 Response:
+```json
 {
-  id: integer,
-  title: string,
-  url: string | null,
-  text: string | null,
-  post_type: string,
-  score: integer,
-  comment_count: integer,
-  user_id: integer,
-  username: string,
-  created_at: string
+  "id": 1,
+  "title": "string",
+  "url": "string | null",
+  "text": "string | null",
+  "post_type": "string",
+  "score": 0,
+  "comment_count": 0,
+  "user_id": 1,
+  "username": "string",
+  "created_at": "string"
 }
+```
 
-DELETE /posts/{post_id}
+`DELETE /posts/{post_id}`
+
 Auth: required
 
-Response:
-{
-  message: string
-}
+Response: `204 No Content`
 
 ## Comments
 
-POST /posts/{post_id}/comments
+`POST /posts/{post_id}/comments`
+
 Auth: required
+
 Request body:
+```json
 {
-  text: string,
-  parent_id: integer | null
+  "text": "string",
+  "parent_id": "integer | null"
 }
+```
 
 Response:
+```json
 {
-  id: integer,
-  text: string,
-  user_id: integer,
-  post_id: integer,
-  parent_id: integer | null,
-  created_at: string,
-  username: string,
-  score: integer
+  "id": 1,
+  "text": "string",
+  "user_id": 1,
+  "post_id": 1,
+  "parent_id": "integer | null",
+  "created_at": "string",
+  "username": "string",
+  "score": 0
 }
+```
 
-GET /posts/{post_id}/comments
+`GET /posts/{post_id}/comments`
+
 Response:
+```json
 [
   {
-    id: integer,
-    text: string,
-    user_id: integer,
-    post_id: integer,
-    parent_id: integer | null,
-    created_at: string,
-    username: string,
-    score: integer,
-    replies: [/* same shape as a comment */]
+    "id": 1,
+    "text": "string",
+    "user_id": 1,
+    "post_id": 1,
+    "parent_id": "integer | null",
+    "created_at": "string",
+    "username": "string",
+    "score": 0,
+    "replies": []
   }
 ]
+```
 
-PUT /comments/{comment_id}
+`PUT /comments/{comment_id}`
+
 Auth: required
+
 Request body:
+```json
 {
-  text: string
+  "text": "string"
 }
+```
 
 Response:
+```json
 {
-  id: integer,
-  text: string,
-  user_id: integer,
-  post_id: integer,
-  parent_id: integer | null,
-  created_at: string,
-  username: string,
-  score: integer
+  "id": 1,
+  "text": "string",
+  "user_id": 1,
+  "post_id": 1,
+  "parent_id": "integer | null",
+  "created_at": "string",
+  "username": "string",
+  "score": 0
 }
+```
 
-DELETE /comments/{comment_id}
+`DELETE /comments/{comment_id}`
+
 Auth: required
 
-Response:
-{
-  message: string
-}
+Response: `204 No Content`
 
-GET /comments/recent
+`GET /comments/recent`
+
 Request params:
-- skip: integer (optional, default: 0)
-- limit: integer (optional, default: 30, max: 100)
+- `skip`: integer (optional, default: 0)
+- `limit`: integer (optional, default: 30, max: 100)
 
 Response:
+```json
 [
   {
-    id: integer,
-    text: string,
-    user_id: integer,
-    post_id: integer,
-    parent_id: integer | null,
-    created_at: string,
-    username: string,
-    post_title: string,
-    score: integer
+    "id": 1,
+    "text": "string",
+    "user_id": 1,
+    "post_id": 1,
+    "parent_id": "integer | null",
+    "created_at": "string",
+    "username": "string",
+    "post_title": "string",
+    "score": 0
   }
 ]
+```
 
 ## Votes
 
-POST /posts/{post_id}/vote
+`POST /posts/{post_id}/vote`
+
 Auth: required
+
 Request body:
+```json
 {
-  vote_type: integer (required, options: 1, -1)
+  "vote_type": 1
 }
+```
 
 Response:
+```json
 {
-  id: integer,
-  user_id: integer,
-  post_id: integer,
-  vote_type: integer
+  "id": 1,
+  "user_id": 1,
+  "post_id": 1,
+  "vote_type": 1
 }
+```
 
-GET /posts/{post_id}/vote
+`GET /posts/{post_id}/vote`
+
 Auth: required
 
 Response:
+```json
 {
-  vote_type: integer (1, -1, or 0 if no vote)
+  "vote_type": 1
 }
+```
 
-POST /comments/{comment_id}/vote
+`POST /comments/{comment_id}/vote`
+
 Auth: required
+
 Request body:
+```json
 {
-  vote_type: integer (required, options: 1, -1)
+  "vote_type": 1
 }
+```
 
 Response:
+```json
 {
-  id: integer,
-  user_id: integer,
-  comment_id: integer,
-  vote_type: integer,
-  created_at: string
+  "id": 1,
+  "user_id": 1,
+  "comment_id": 1,
+  "vote_type": 1,
+  "created_at": "string"
 }
+```
 
 ## Notifications
 
-GET /notifications
+`GET /notifications`
+
 Auth: required
+
 Request params:
-- skip: integer (optional, default: 0)
-- limit: integer (optional, default: 20, max: 100)
+- `skip`: integer (optional, default: 0)
+- `limit`: integer (optional, default: 20, max: 100)
 
 Response:
+```json
 [
   {
-    id: integer,
-    user_id: integer,
-    actor_id: integer,
-    actor_username: string,
-    type: string,
-    message: string,
-    read: boolean,
-    post_id: integer | null,
-    comment_id: integer | null,
-    created_at: string
+    "id": 1,
+    "user_id": 1,
+    "actor_id": 1,
+    "actor_username": "string",
+    "type": "string",
+    "message": "string",
+    "read": false,
+    "post_id": "integer | null",
+    "comment_id": "integer | null",
+    "created_at": "string"
   }
 ]
+```
 
-PUT /notifications/{notification_id}/read
+`PUT /notifications/{notification_id}/read`
+
 Auth: required
 
 Response:
+```json
 {
-  message: string
+  "message": "string"
 }
+```
 
-GET /notifications/unread/count
+`GET /notifications/unread/count`
+
 Auth: required
 
 Response:
+```json
 {
-  unread_count: integer
+  "unread_count": 0
 }
+```
 
 ## Health
 
-GET /
+`GET /`
+
 Response:
+```json
 {
-  message: string,
-  version: string
+  "message": "Hacker News Clone API",
+  "version": "1.0.0"
 }
+```

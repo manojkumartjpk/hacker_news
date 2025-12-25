@@ -90,6 +90,29 @@ def test_vote_on_comment(client, auth_headers):
 
 
 @pytest.mark.unit
+def test_vote_on_comment_rejects_invalid_value(client, auth_headers):
+    post_response = client.post(
+        "/posts/",
+        json={"title": "Bad vote", "text": "Body", "url": None},
+        headers=auth_headers,
+    )
+    post_id = post_response.json()["id"]
+    comment_response = client.post(
+        f"/posts/{post_id}/comments",
+        json={"text": "Vote me", "parent_id": None},
+        headers=auth_headers,
+    )
+    comment_id = comment_response.json()["id"]
+    vote_response = client.post(
+        f"/comments/{comment_id}/vote",
+        json={"vote_type": 0},
+        headers=auth_headers,
+    )
+    assert vote_response.status_code == 400
+    assert vote_response.json()["detail"] == "Vote type must be 1 (upvote) or -1 (downvote)"
+
+
+@pytest.mark.unit
 def test_recent_comments(client, auth_headers):
     post_response = client.post(
         "/posts/",
@@ -107,3 +130,47 @@ def test_recent_comments(client, auth_headers):
     response = client.get("/comments/recent", params={"limit": 10})
     assert response.status_code == 200
     assert len(response.json()) >= 1
+
+
+@pytest.mark.unit
+def test_update_comment_success(client, auth_headers):
+    post_response = client.post(
+        "/posts/",
+        json={"title": "Update comment post", "text": "Body", "url": None},
+        headers=auth_headers,
+    )
+    post_id = post_response.json()["id"]
+    comment_response = client.post(
+        f"/posts/{post_id}/comments",
+        json={"text": "Original", "parent_id": None},
+        headers=auth_headers,
+    )
+    comment_id = comment_response.json()["id"]
+    update_response = client.put(
+        f"/comments/{comment_id}",
+        json={"text": "Updated"},
+        headers=auth_headers,
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["text"] == "Updated"
+
+
+@pytest.mark.unit
+def test_delete_comment_success(client, auth_headers):
+    post_response = client.post(
+        "/posts/",
+        json={"title": "Delete comment post", "text": "Body", "url": None},
+        headers=auth_headers,
+    )
+    post_id = post_response.json()["id"]
+    comment_response = client.post(
+        f"/posts/{post_id}/comments",
+        json={"text": "Delete me", "parent_id": None},
+        headers=auth_headers,
+    )
+    comment_id = comment_response.json()["id"]
+    delete_response = client.delete(f"/comments/{comment_id}", headers=auth_headers)
+    assert delete_response.status_code == 204
+    thread_response = client.get(f"/posts/{post_id}/comments")
+    assert thread_response.status_code == 200
+    assert all(comment["id"] != comment_id for comment in thread_response.json())

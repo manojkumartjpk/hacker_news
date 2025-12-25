@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 from database import get_db
 from schemas import CommentUpdate, Comment
@@ -22,7 +22,7 @@ def update_comment(
     return CommentService.update_comment(db, comment_id, comment_update, current_user.id)
 
 
-@router.delete("/{comment_id}")
+@router.delete("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_comment(
     comment_id: int,
     db: Session = Depends(get_db),
@@ -31,4 +31,4 @@ def delete_comment(
 ):
     """Delete a comment owned by the authenticated user."""
     CommentService.delete_comment(db, comment_id, current_user.id)
-    return {"message": "Comment deleted successfully"}
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

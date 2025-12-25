@@ -1,5 +1,6 @@
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 import services.post_service as post_service
 
@@ -17,13 +18,8 @@ def test_create_post_rejects_invalid_type(db_session):
     db_session.commit()
     db_session.refresh(user)
 
-    with pytest.raises(HTTPException) as exc:
-        PostService.create_post(
-            db_session,
-            PostCreate(title="Bad", url="https://example.com", text=None, post_type="invalid"),
-            user.id,
-        )
-    assert exc.value.status_code == 400
+    with pytest.raises(ValidationError):
+        PostCreate(title="Bad", url="https://example.com", text=None, post_type="invalid")
 
 
 @pytest.mark.unit
@@ -38,9 +34,8 @@ def test_update_post_rejects_invalid_type(db_session):
     db_session.commit()
     db_session.refresh(post)
 
-    with pytest.raises(HTTPException) as exc:
-        PostService.update_post(db_session, post.id, PostUpdate(post_type="invalid"), user.id)
-    assert exc.value.status_code == 400
+    with pytest.raises(ValidationError):
+        PostUpdate(post_type="invalid")
 
 
 @pytest.mark.unit

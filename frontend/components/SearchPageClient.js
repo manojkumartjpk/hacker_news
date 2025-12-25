@@ -6,14 +6,15 @@ import React from 'react';
 import { postsAPI } from '../lib/api';
 import { commentsLabel, pointsLabel, safeHostname, timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
+import InlineError from './InlineError';
+import { getPagination } from '../lib/pagination';
 
 const RESULTS_PER_PAGE = 30;
 
 export default function SearchPageClient() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
-  const pageParam = Number.parseInt(searchParams.get('p') || '1', 10);
-  const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
+  const { page, skip } = getPagination(searchParams, RESULTS_PER_PAGE);
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,6 @@ export default function SearchPageClient() {
     try {
       setLoading(true);
       setError('');
-      const skip = (page - 1) * RESULTS_PER_PAGE;
       const response = await postsAPI.searchPosts({ q: query, skip, limit: RESULTS_PER_PAGE });
       setPosts(response.data);
     } catch (error) {
@@ -47,7 +47,7 @@ export default function SearchPageClient() {
   }
 
   if (error) {
-    return <div className="hn-error">{error}</div>;
+    return <InlineError message={error} />;
   }
 
   if (!posts.length) {

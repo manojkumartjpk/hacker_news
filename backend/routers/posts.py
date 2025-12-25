@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
@@ -64,7 +64,7 @@ def update_post(
     """Update a post owned by the authenticated user."""
     return PostService.update_post(db, post_id, post_update, current_user.id)
 
-@router.delete("/{post_id}")
+@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(
     post_id: int,
     db: Session = Depends(get_db),
@@ -73,4 +73,4 @@ def delete_post(
 ):
     """Delete a post owned by the authenticated user."""
     PostService.delete_post(db, post_id, current_user.id)
-    return {"message": "Post deleted successfully"}
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
