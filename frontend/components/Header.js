@@ -47,22 +47,22 @@ export default function Header() {
 
   return (
     <tr>
-      <td style={{ backgroundColor: '#ff6600' }}>
-        <table border="0" cellPadding="0" cellSpacing="0" width="100%" style={{ padding: '2px' }}>
+      <td className="bg-[#ff6600] p-[2px]">
+        <table border="0" cellPadding="0" cellSpacing="0" width="100%" className="w-full">
           <tbody>
             <tr>
-              <td style={{ width: '18px', paddingRight: '4px' }}>
+              <td className="w-[18px] pr-1">
                 <a href="/">
                   <img
                     src="https://news.ycombinator.com/y18.svg"
                     width="18"
                     height="18"
-                    style={{ border: '1px white solid', display: 'block' }}
+                    className="border border-white block"
                     alt="Hacker News"
                   />
                 </a>
               </td>
-              <td style={{ lineHeight: '12pt', height: '10px' }}>
+              <td className="leading-[12pt] h-[10px]">
                 <span className="pagetop">
                   <b className="hnname">
                     <a href="/">Hacker News</a>
@@ -76,7 +76,7 @@ export default function Header() {
                   <a href="/submit" className={pathname === '/submit' ? 'topsel' : ''}>submit</a>
                 </span>
               </td>
-              <td style={{ textAlign: 'right', paddingRight: '4px' }} className="hn-nav-right">
+              <td className="hn-nav-right text-right pr-1 align-top">
                 <span className="pagetop">
                   {isLoggedIn ? (
                     <>

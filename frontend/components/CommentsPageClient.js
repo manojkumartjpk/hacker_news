@@ -81,16 +81,16 @@ export default function CommentsPageClient() {
   }
 
   return (
-    <table border="0" cellPadding="0" cellSpacing="0">
+    <table border="0" cellPadding="0" cellSpacing="0" className="comment-table">
       <tbody>
         {comments.map((comment) => (
           <React.Fragment key={comment.id}>
             <tr className="athing">
               <td className="ind"></td>
-              <td className="votelinks">
+              <td className="votelinks align-top">
                 <center>
                   {commentVotes[comment.id] === 1 ? (
-                    <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                    <div className="votearrow invisible"></div>
                   ) : (
                     <a
                       href="#"
@@ -114,26 +114,28 @@ export default function CommentsPageClient() {
                 </center>
               </td>
               <td className="default">
-                <div className="comhead">
-                  <a href={`/user/${comment.username}`} className="hnuser">
-                    {comment.username}
-                  </a>
-                  {' '}
-                  <span className="age" title={new Date(comment.created_at).toISOString()}>
-                    <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
-                  </span>
-                  <span className="navs">
-                    {comment.parent_id && (
-                      <>
-                        {' '}
-                        | <a href={`/post/${comment.post_id}?id=${comment.parent_id}`}>parent</a>
-                      </>
-                    )}
+                <div className="comment-headline">
+                  <span className="comhead">
+                    <a href={`/user/${comment.username}`} className="hnuser">
+                      {comment.username}
+                    </a>
                     {' '}
-                    | <a href={`/post/${comment.post_id}?id=${comment.id}`}>context</a>
-                    <span className="onstory">
+                    <span className="age" title={new Date(comment.created_at).toISOString()}>
+                      <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
+                    </span>
+                    <span className="navs">
+                      {comment.parent_id && (
+                        <>
+                          {' '}
+                          | <a href={`/post/${comment.post_id}?id=${comment.parent_id}`}>parent</a>
+                        </>
+                      )}
                       {' '}
-                      | on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
+                      | <a href={`/post/${comment.post_id}?id=${comment.id}`}>context</a>
+                      <span className="onstory">
+                        {' '}
+                        | on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
+                      </span>
                     </span>
                   </span>
                 </div>
@@ -142,10 +144,10 @@ export default function CommentsPageClient() {
                 </div>
               </td>
             </tr>
-            <tr className="spacer" style={{ height: '15px' }}></tr>
+            <tr className="spacer h-[15px]"></tr>
           </React.Fragment>
         ))}
-        <tr className="spacer" style={{ height: '10px' }}></tr>
+        <tr className="spacer h-[10px]"></tr>
         <tr>
           <td colSpan="2"></td>
           <td className="title">

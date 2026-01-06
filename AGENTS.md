@@ -3,7 +3,7 @@
 This repository is a Hacker News clone with a Next.js frontend and a FastAPI backend.
 
 ## Stack at a glance
-- Frontend: Next.js (React), no CSS framework
+- Frontend: Next.js (React), Tailwind CSS
 - Backend: FastAPI (Python 3.11) with SQLAlchemy 2.0
 - Data: PostgreSQL (system of record), Redis (cache/rate limiting)
 - Infra: Caddy, Docker Compose
@@ -43,4 +43,4 @@ This repository is a Hacker News clone with a Next.js frontend and a FastAPI bac
 ## Project conventions
 - Prefer SQLAlchemy for DB access and keep business logic in `backend/services`.
 - Keep routers thin; validation in schemas.
-- Avoid introducing CSS frameworks; use plain CSS and existing patterns.
+- Use Tailwind CSS for styling; avoid duplicating utility classes and limit inline styles.

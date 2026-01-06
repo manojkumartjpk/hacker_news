@@ -77,7 +77,7 @@ export default function CommentItem({
           <div className="comment-head">
             <div className="comment-votelinks">
               {userVote === 1 ? (
-                <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                <div className="votearrow invisible"></div>
               ) : (
                 <a
                   href="#"

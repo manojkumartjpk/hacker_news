@@ -11,20 +11,20 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
+      <body className="text-black">
         <table
           id="hnmain"
           border="0"
           cellPadding="0"
           cellSpacing="0"
           width="85%"
-          style={{ margin: '0 auto', backgroundColor: '#f6f6ef' }}
+          className="mx-auto bg-[#f6f6ef] w-[85%] min-w-[796px]"
         >
           <tbody>
-            <Suspense fallback={<tr><td style={{ backgroundColor: '#ff6600', height: '24px' }}>&nbsp;</td></tr>}>
+            <Suspense fallback={<tr><td className="bg-[#ff6600] h-6">&nbsp;</td></tr>}>
               <Header />
             </Suspense>
-            <tr style={{ height: '10px' }} />
+            <tr className="h-[10px]" />
             <tr>
               <td className="hncontent">
                 {children}

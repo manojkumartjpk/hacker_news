@@ -78,12 +78,12 @@ export default function ReplyPage() {
       <table border="0" cellPadding="0" cellSpacing="0">
         <tbody>
           <tr className="athing">
-            <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+            <td className="title align-top text-right">
               <span className="rank">&nbsp;</span>
             </td>
-            <td style={{ verticalAlign: 'top' }} className="votelinks">
+            <td className="votelinks align-top">
               <center>
-                <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                <div className="votearrow invisible"></div>
               </center>
             </td>
             <td className="title">
@@ -105,14 +105,14 @@ export default function ReplyPage() {
               <div className="comment">{comment.text}</div>
             </td>
           </tr>
-          <tr className="spacer" style={{ height: '6px' }}></tr>
+          <tr className="spacer h-[6px]"></tr>
           <tr className="comment-form-row">
-            <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+            <td className="title align-top text-right">
               <span className="rank">&nbsp;</span>
             </td>
-            <td style={{ verticalAlign: 'top' }} className="votelinks">
+            <td className="votelinks align-top">
               <center>
-                <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                <div className="votearrow invisible"></div>
               </center>
             </td>
             <td>

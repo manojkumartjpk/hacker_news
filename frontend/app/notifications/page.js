@@ -51,7 +51,7 @@ export default function Notifications() {
     <table border="0" cellPadding="0" cellSpacing="0">
       <tbody>
         <tr>
-          <td className="title" style={{ paddingBottom: '10px' }}>Notifications</td>
+          <td className="title pb-2.5">Notifications</td>
         </tr>
         <tr>
           <td>
@@ -60,17 +60,17 @@ export default function Notifications() {
                 <tbody>
                   {notifications.map((notification) => (
                     <tr key={notification.id}>
-                      <td style={{ padding: '4px 0' }}>
-                        <div style={{ fontSize: '10pt', marginBottom: '2px' }}>
+                      <td className="py-1">
+                        <div className="text-[10pt] mb-0.5">
                           {notification.message}
                         </div>
-                        <div style={{ fontSize: '8pt', color: '#828282' }}>
+                        <div className="text-[8pt] text-[#828282]">
                           {timeAgo(notification.created_at)}
                           {!notification.read && (
-                            <span style={{ marginLeft: '8px' }}>
+                            <span className="ml-2">
                               <button
                                 onClick={() => markAsRead(notification.id)}
-                                style={{ color: '#ff6600', textDecoration: 'none', fontSize: '8pt' }}
+                                className="text-[#ff6600] no-underline text-[8pt]"
                               >
                                 [mark as read]
                               </button>
@@ -83,7 +83,7 @@ export default function Notifications() {
                 </tbody>
               </table>
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#828282', fontSize: '10pt' }}>
+              <div className="text-center py-5 text-[#828282] text-[10pt]">
                 No notifications yet.
               </div>
             )}

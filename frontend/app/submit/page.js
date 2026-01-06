@@ -65,7 +65,7 @@ export default function Submit() {
     <table border="0" cellPadding="0" cellSpacing="0">
       <tbody>
         <tr>
-          <td className="title" style={{ paddingBottom: '10px' }}>Submit</td>
+          <td className="title pb-2.5">Submit</td>
         </tr>
         <tr>
           <td>
@@ -82,7 +82,7 @@ export default function Submit() {
                         name="title"
                         value={formData.title}
                         onChange={handleChange}
-                        style={{ width: '100%' }}
+                        className="w-full"
                         required
                       />
                     </td>
@@ -96,9 +96,9 @@ export default function Submit() {
                         value={formData.url}
                         onChange={handleChange}
                         placeholder="https://example.com"
-                        style={{ width: '100%' }}
+                        className="w-full"
                       />
-                      <div style={{ fontSize: '8pt', color: '#828282', marginTop: '2px' }}>
+                      <div className="text-[8pt] text-[#828282] mt-0.5">
                         Leave blank to submit a text post
                       </div>
                     </td>
@@ -122,7 +122,7 @@ export default function Submit() {
                         name="post_type"
                         value={formData.post_type}
                         onChange={handleChange}
-                        style={{ width: '200px' }}
+                        className="w-[200px]"
                       >
                         <option value="story">story</option>
                         <option value="ask">ask</option>
@@ -137,7 +137,7 @@ export default function Submit() {
                       <button
                         type="submit"
                         disabled={loading}
-                        style={{ marginTop: '10px' }}
+                        className="mt-2.5"
                       >
                         {loading ? 'Submitting...' : 'Submit'}
                       </button>

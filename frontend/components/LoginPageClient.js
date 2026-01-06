@@ -86,7 +86,7 @@ export default function LoginPageClient() {
     <table border="0" cellPadding="0" cellSpacing="0">
       <tbody>
         <tr>
-          <td className="title" style={{ paddingBottom: '10px' }}>Login</td>
+          <td className="title pb-2.5">Login</td>
         </tr>
         <tr>
           <td>
@@ -104,7 +104,7 @@ export default function LoginPageClient() {
                         value={formData.username}
                         onChange={handleChange}
                         title="Enter your username"
-                        style={{ width: '200px' }}
+                        className="w-[200px]"
                         required
                       />
                     </td>
@@ -118,7 +118,7 @@ export default function LoginPageClient() {
                         value={formData.password}
                         onChange={handleChange}
                         title="Enter your password"
-                        style={{ width: '200px' }}
+                        className="w-[200px]"
                         required
                       />
                     </td>
@@ -129,7 +129,7 @@ export default function LoginPageClient() {
                       <button
                         type="submit"
                         disabled={loading}
-                        style={{ marginTop: '10px' }}
+                        className="mt-2.5"
                       >
                         {loading ? 'Logging in...' : 'Login'}
                       </button>
@@ -139,8 +139,8 @@ export default function LoginPageClient() {
               </table>
             </form>
 
-            <div style={{ marginTop: '20px' }}>
-              <Link href="/register" style={{ color: '#ff6600' }}>Create account</Link>
+            <div className="mt-5">
+              <Link href="/register" className="text-[#ff6600]">Create account</Link>
             </div>
           </td>
         </tr>

@@ -92,7 +92,7 @@ export default function Register() {
     <table border="0" cellPadding="0" cellSpacing="0">
       <tbody>
         <tr>
-          <td className="title" style={{ paddingBottom: '10px' }}>Create account</td>
+          <td className="title pb-2.5">Create account</td>
         </tr>
         <tr>
           <td>
@@ -116,7 +116,7 @@ export default function Register() {
                         onChange={handleChange}
                         onBlur={handleUsernameBlur}
                         title="Pick a unique username"
-                        style={{ width: '200px' }}
+                        className="w-[200px]"
                         required
                       />
                     </td>
@@ -138,7 +138,7 @@ export default function Register() {
                         value={formData.email}
                         onChange={handleChange}
                         title="Enter a valid email address"
-                        style={{ width: '200px' }}
+                        className="w-[200px]"
                         required
                       />
                     </td>
@@ -152,7 +152,7 @@ export default function Register() {
                         value={formData.password}
                         onChange={handlePasswordChange}
                         title="At least 9 characters, 1 uppercase, 1 number, 1 special character"
-                        style={{ width: '200px' }}
+                        className="w-[200px]"
                         required
                       />
                     </td>
@@ -170,7 +170,7 @@ export default function Register() {
                       <button
                         type="submit"
                         disabled={loading}
-                        style={{ marginTop: '10px' }}
+                        className="mt-2.5"
                       >
                         {loading ? 'Creating...' : 'Create account'}
                       </button>
@@ -180,8 +180,8 @@ export default function Register() {
               </table>
             </form>
 
-            <div style={{ marginTop: '20px' }}>
-              <Link href="/login" style={{ color: '#ff6600' }}>Login</Link>
+            <div className="mt-5">
+              <Link href="/login" className="text-[#ff6600]">Login</Link>
             </div>
           </td>
         </tr>

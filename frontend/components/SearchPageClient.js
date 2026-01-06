@@ -73,10 +73,10 @@ export default function SearchPageClient() {
           return (
             <React.Fragment key={post.id}>
               <tr className="athing submission">
-                <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+                <td className="title align-top text-right">
                   <span className="rank">{rank}.</span>
                 </td>
-                <td style={{ verticalAlign: 'top' }} className="votelinks">
+                <td className="votelinks align-top">
                   <center>
                     <a
                       id={`up_${post.id}`}
@@ -134,11 +134,11 @@ export default function SearchPageClient() {
                   </span>
                 </td>
               </tr>
-              <tr className="spacer" style={{ height: '5px' }}></tr>
+              <tr className="spacer h-[5px]"></tr>
             </React.Fragment>
           );
         })}
-        <tr className="spacer" style={{ height: '10px' }}></tr>
+        <tr className="spacer h-[10px]"></tr>
         <tr>
           <td colSpan="2"></td>
           <td className="title">

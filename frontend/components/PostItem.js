@@ -38,7 +38,7 @@ export default function PostItem({ post, onVote }) {
 
   return (
     <div className="hn-post">
-      <div style={{ marginBottom: '2px' }}>
+      <div className="mb-0.5">
         <span
           className={`hn-vote-arrow up ${userVote === 1 ? 'voted-up' : ''}`}
           onClick={() => handleVote(1)}

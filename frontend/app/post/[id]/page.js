@@ -196,13 +196,13 @@ export default function PostDetail() {
       <table border="0" cellPadding="0" cellSpacing="0">
         <tbody>
           <tr className="athing submission">
-            <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+            <td className="title align-top text-right">
               <span className="rank"></span>
             </td>
-            <td style={{ verticalAlign: 'top' }} className="votelinks">
+            <td className="votelinks align-top">
               <center>
                 {userVote === 1 ? (
-                  <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                  <div className="votearrow invisible"></div>
                 ) : (
                   <a
                     id={`up_${post.id}`}
@@ -269,7 +269,7 @@ export default function PostDetail() {
                 </span>
               </td>
             </tr>
-            <tr className="spacer" style={{ height: '5px' }}></tr>
+            <tr className="spacer h-[5px]"></tr>
           </tbody>
       </table>
 
@@ -280,12 +280,12 @@ export default function PostDetail() {
       <table border="0" cellPadding="0" cellSpacing="0">
         <tbody>
           <tr className="comment-form-row">
-            <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+            <td className="title align-top text-right">
               <span className="rank">&nbsp;</span>
             </td>
-            <td style={{ verticalAlign: 'top' }} className="votelinks">
+            <td className="votelinks align-top">
               <center>
-                <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                <div className="votearrow invisible"></div>
               </center>
             </td>
             <td>
@@ -336,7 +336,7 @@ export default function PostDetail() {
       )}
 
       {comments.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '20px', color: '#828282', fontSize: '10pt' }}>
+        <div className="text-center py-5 text-[#828282] text-[10pt]">
           No comments yet.
         </div>
       )}

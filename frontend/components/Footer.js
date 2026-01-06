@@ -16,9 +16,9 @@ export default function Footer() {
           <table border="0" cellPadding="0" cellSpacing="0" width="100%">
             <tbody>
               <tr>
-                <td style={{ backgroundColor: '#f6f6ef' }}>
-                  <div style={{ borderTop: '2px solid #ff6600', height: '1px' }}></div>
-                  <div style={{ textAlign: 'center', padding: '8px 0' }} className="subtext hn-footer">
+                <td className="bg-[#f6f6ef]">
+                  <div className="border-t-2 border-[#ff6600] h-px"></div>
+                  <div className="subtext hn-footer text-center">
                     <a href="https://news.ycombinator.com/newsguidelines.html">Guidelines</a>
                     {' | '}
                     <a href="https://news.ycombinator.com/newsfaq.html">FAQ</a>
@@ -35,7 +35,7 @@ export default function Footer() {
                     {' | '}
                     <a href="mailto:hn@ycombinator.com">Contact</a>
                   </div>
-                  <div style={{ textAlign: 'center', paddingBottom: '10px' }} className="subtext hn-footer">
+                  <div className="subtext hn-footer text-center">
                     <form action="/search" method="GET">
                       Search:{' '}
                       <input type="text" name="q" size="17" />
