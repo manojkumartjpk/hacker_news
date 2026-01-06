@@ -64,6 +64,7 @@ export const commentsAPI = {
   updateComment: (commentId, commentData) => api.put(`/comments/${commentId}`, commentData),
   deleteComment: (commentId) => api.delete(`/comments/${commentId}`),
   getRecentComments: (params) => api.get('/comments/recent', { params }),
+  getVotesBulk: (commentIds) => api.post('/comments/votes/bulk', { comment_ids: commentIds }),
   vote: (commentId, voteData) => api.post(`/comments/${commentId}/vote`, voteData),
   getVote: (commentId) => api.get(`/comments/${commentId}/vote`),
   unvote: (commentId) => api.delete(`/comments/${commentId}/vote`),

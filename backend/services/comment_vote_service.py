@@ -64,3 +64,18 @@ class CommentVoteService:
         if existing_vote:
             db.delete(existing_vote)
             db.commit()
+
+    @staticmethod
+    def get_user_votes_for_comments(db: Session, user_id: int, comment_ids: list[int]) -> list[dict]:
+        if not comment_ids:
+            return []
+        unique_ids = list(dict.fromkeys(comment_ids))
+        votes = db.query(CommentVote.comment_id).filter(
+            CommentVote.user_id == user_id,
+            CommentVote.comment_id.in_(unique_ids)
+        ).all()
+        vote_map = {comment_id: 1 for (comment_id,) in votes}
+        return [
+            {"comment_id": comment_id, "vote_type": vote_map.get(comment_id, 0)}
+            for comment_id in unique_ids
+        ]

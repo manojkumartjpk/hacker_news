@@ -9,11 +9,26 @@ import { pointsLabel, safeHostname, timeAgo } from '../../../lib/format';
 import { getErrorMessage } from '../../../lib/errors';
 import InlineError from '../../../components/InlineError';
 
+const collectCommentIds = (commentList) => {
+  const ids = [];
+  const stack = [...commentList];
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current) continue;
+    ids.push(current.id);
+    if (current.replies && current.replies.length) {
+      stack.push(...current.replies);
+    }
+  }
+  return ids;
+};
+
 export default function PostDetail() {
   const { id } = useParams();
   const router = useRouter();
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
+  const [commentVotes, setCommentVotes] = useState({});
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -44,6 +59,31 @@ export default function PostDetail() {
       fetchComments();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setCommentVotes({});
+      return;
+    }
+    const ids = collectCommentIds(comments);
+    if (ids.length === 0) {
+      setCommentVotes({});
+      return;
+    }
+    const fetchCommentVotes = async () => {
+      try {
+        const response = await commentsAPI.getVotesBulk(ids);
+        const voteMap = response.data.reduce((accumulator, vote) => {
+          accumulator[vote.comment_id] = vote.vote_type;
+          return accumulator;
+        }, {});
+        setCommentVotes(voteMap);
+      } catch (error) {
+        setCommentVotes({});
+      }
+    };
+    fetchCommentVotes();
+  }, [comments, isLoggedIn]);
 
   useEffect(() => {
     if (!id || !isLoggedIn) {
@@ -277,6 +317,7 @@ export default function PostDetail() {
                 comment={comment}
                 onRefresh={fetchComments}
                 currentUser={currentUser}
+                commentVotes={commentVotes}
               />
             ))}
           </tbody>

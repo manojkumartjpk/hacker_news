@@ -1,13 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas import CommentVoteCreate, VoteStatus
+from schemas import CommentVoteCreate, CommentVoteBulkRequest, CommentVoteStatusWithComment, VoteStatus
 from services import CommentVoteService
 from auth.deps import get_current_user
 from models import User
 from rate_limit import rate_limit
 
 router = APIRouter()
+
+
+@router.post("/votes/bulk", response_model=list[CommentVoteStatusWithComment])
+def get_user_votes_bulk(
+    payload: CommentVoteBulkRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    rate_limited: bool = Depends(rate_limit())
+):
+    """Return the current user's votes for a list of comments."""
+    return CommentVoteService.get_user_votes_for_comments(db, current_user.id, payload.comment_ids)
 
 
 @router.post("/{comment_id}/vote", response_model=VoteStatus)

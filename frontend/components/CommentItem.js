@@ -10,7 +10,7 @@ import { getErrorMessage } from '../lib/errors';
 const MAX_NESTING = 5; // Prevent runaway nesting in deep reply threads.
 const BASE_INDENT = 16;
 
-export default function CommentItem({ comment, depth = 0, onRefresh, currentUser }) {
+export default function CommentItem({ comment, depth = 0, onRefresh, currentUser, commentVotes = {} }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
@@ -29,16 +29,8 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
       setUserVote(0);
       return;
     }
-    const fetchVote = async () => {
-      try {
-        const response = await commentsAPI.getVote(comment.id);
-        setUserVote(response.data.vote_type);
-      } catch (error) {
-        // Ignore vote lookup failures.
-      }
-    };
-    fetchVote();
-  }, [comment.id, isLoggedIn]);
+    setUserVote(commentVotes[comment.id] ?? 0);
+  }, [comment.id, commentVotes, isLoggedIn]);
 
   const handleEditSave = async () => {
     if (!editText.trim()) return;
@@ -215,6 +207,7 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
           depth={depth + 1}
           onRefresh={onRefresh}
           currentUser={currentUser}
+          commentVotes={commentVotes}
         />
       ))}
     </>

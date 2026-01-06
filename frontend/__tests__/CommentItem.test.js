@@ -16,7 +16,6 @@ jest.mock('../lib/api', () => ({
     updateComment: jest.fn(),
     deleteComment: jest.fn(),
     vote: jest.fn(),
-    getVote: jest.fn(),
     unvote: jest.fn(),
   },
 }));
@@ -47,12 +46,10 @@ describe('CommentItem', () => {
     commentsAPI.updateComment.mockClear();
     commentsAPI.deleteComment.mockClear();
     commentsAPI.vote.mockClear();
-    commentsAPI.getVote.mockClear();
     commentsAPI.unvote.mockClear();
     commentsAPI.updateComment.mockResolvedValue({ data: {} });
     commentsAPI.deleteComment.mockResolvedValue({ data: {} });
     commentsAPI.vote.mockResolvedValue({ data: {} });
-    commentsAPI.getVote.mockResolvedValue({ data: { vote_type: 0 } });
     commentsAPI.unvote.mockResolvedValue({ data: {} });
   });
 
