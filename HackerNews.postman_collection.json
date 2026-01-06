@@ -1,0 +1,483 @@
+{
+  "info": {
+    "name": "Hacker News API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "postId",
+      "value": "1"
+    },
+    {
+      "key": "commentId",
+      "value": "1"
+    },
+    {
+      "key": "notificationId",
+      "value": "1"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"string\",\n  \"email\": \"string\",\n  \"password\": \"string\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"string\",\n  \"password\": \"string\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Username Available",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/username-available?username=string",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "username-available"],
+              "query": [
+                { "key": "username", "value": "string" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"url\": \"https://example.com\",\n  \"text\": null,\n  \"post_type\": \"story\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"]
+            }
+          }
+        },
+        {
+          "name": "List Posts",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/posts?skip=0&limit=10&sort=new&post_type=story",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "10" },
+                { "key": "sort", "value": "new" },
+                { "key": "post_type", "value": "story" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Posts",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/posts/search?q=term&skip=0&limit=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "search"],
+              "query": [
+                { "key": "q", "value": "term" },
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "30" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Post",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"url\": \"https://example.com\",\n  \"text\": null,\n  \"post_type\": \"story\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"string\",\n  \"parent_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "List Comments For Post",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Get Comment",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Comment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"string\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Recent Comments",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/comments/recent?skip=0&limit=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "recent"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "30" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Votes",
+      "item": [
+        {
+          "name": "Vote Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vote_type\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}/vote",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}", "vote"]
+            }
+          }
+        },
+        {
+          "name": "Get Post Vote",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}/vote",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}", "vote"]
+            }
+          }
+        },
+        {
+          "name": "Delete Post Vote",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}/vote",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}", "vote"]
+            }
+          }
+        },
+        {
+          "name": "Vote Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vote_type\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}/vote",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}", "vote"]
+            }
+          }
+        },
+        {
+          "name": "Get Comment Vote",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}/vote",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}", "vote"]
+            }
+          }
+        },
+        {
+          "name": "Delete Comment Vote",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}/vote",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}", "vote"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/notifications?skip=0&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"],
+              "query": [
+                { "key": "skip", "value": "0" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Unread Count",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread/count",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "unread", "count"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": []
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -51,6 +51,7 @@ export const postsAPI = {
   createPost: (postData) => api.post('/posts/', postData),
   updatePost: (id, postData) => api.put(`/posts/${id}`, postData),
   deletePost: (id) => api.delete(`/posts/${id}`),
+  getVotesBulk: (postIds) => api.post('/posts/votes/bulk', { post_ids: postIds }),
   vote: (postId, voteData) => api.post(`/posts/${postId}/vote`, voteData),
   getVote: (postId) => api.get(`/posts/${postId}/vote`),
   unvote: (postId) => api.delete(`/posts/${postId}/vote`),

@@ -76,7 +76,7 @@ class CommentService:
     def _get_total_score_for_comment(db: Session, comment_id: int, post_id: int) -> int:
         comment_score_subq = db.query(
             CommentVote.comment_id.label("comment_id"),
-            func.sum(CommentVote.vote_type).label("score")
+            func.count(CommentVote.id).label("score")
         ).group_by(CommentVote.comment_id).subquery()
 
         results = db.query(
@@ -153,7 +153,7 @@ class CommentService:
         # Precompute scores per comment so we can join them in one query.
         comment_score_subq = db.query(
             CommentVote.comment_id.label("comment_id"),
-            func.sum(CommentVote.vote_type).label("score")
+            func.count(CommentVote.id).label("score")
         ).group_by(CommentVote.comment_id).subquery()
 
         results = db.query(
@@ -201,7 +201,7 @@ class CommentService:
     def get_comment_detail(db: Session, comment_id: int) -> dict:
         comment_score_subq = db.query(
             CommentVote.comment_id.label("comment_id"),
-            func.sum(CommentVote.vote_type).label("score")
+            func.count(CommentVote.id).label("score")
         ).group_by(CommentVote.comment_id).subquery()
 
         result = db.query(

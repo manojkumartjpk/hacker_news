@@ -42,12 +42,8 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
     }
     const fetchVotes = async () => {
       try {
-        const entries = await Promise.all(
-          posts.map(async (post) => {
-            const response = await postsAPI.getVote(post.id);
-            return [post.id, response.data.vote_type];
-          })
-        );
+        const response = await postsAPI.getVotesBulk(posts.map((post) => post.id));
+        const entries = response.data.map(({ post_id, vote_type }) => [post_id, vote_type]);
         setUserVotes(Object.fromEntries(entries));
       } catch (error) {
         // Ignore vote lookup failures to keep the feed usable.

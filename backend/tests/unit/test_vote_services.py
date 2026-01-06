@@ -49,7 +49,7 @@ def test_comment_vote_score(db_session):
 
     assert CommentVoteService.get_comment_score(db_session, comment.id) == 0
 
-    db_session.add(CommentVote(user_id=user.id, comment_id=comment.id, vote_type=1))
+    db_session.add(CommentVote(user_id=user.id, comment_id=comment.id))
     db_session.commit()
 
     assert CommentVoteService.get_comment_score(db_session, comment.id) == 1
@@ -71,7 +71,7 @@ def test_vote_service_creates_and_updates_vote(db_session):
     user, post = _create_user_post(db_session, username="alice")
 
     vote = VoteService.vote_on_post(db_session, post.id, VoteCreate(vote_type=1), user.id)
-    assert vote.vote_type == 1
+    assert vote is not None
     db_session.refresh(post)
     assert post.score == 1
 
@@ -80,12 +80,6 @@ def test_vote_service_creates_and_updates_vote(db_session):
     db_session.refresh(post)
     assert post.score == 1
 
-    flipped_vote = VoteService.vote_on_post(db_session, post.id, VoteCreate(vote_type=-1), user.id)
-    assert flipped_vote.id == vote.id
-    assert flipped_vote.vote_type == -1
-    db_session.refresh(post)
-    assert post.score == -1
-
 
 @pytest.mark.unit
 def test_vote_service_get_user_vote_on_post(db_session):
@@ -93,7 +87,6 @@ def test_vote_service_get_user_vote_on_post(db_session):
     VoteService.vote_on_post(db_session, post.id, VoteCreate(vote_type=1), user.id)
     fetched = VoteService.get_user_vote_on_post(db_session, post.id, user.id)
     assert fetched is not None
-    assert fetched.vote_type == 1
 
 
 @pytest.mark.unit
@@ -107,7 +100,7 @@ def test_comment_vote_service_updates_vote(db_session):
         CommentVoteCreate(vote_type=1),
         user.id,
     )
-    assert vote.vote_type == 1
+    assert vote is not None
 
     same_vote = CommentVoteService.vote_on_comment(
         db_session,
@@ -116,12 +109,3 @@ def test_comment_vote_service_updates_vote(db_session):
         user.id,
     )
     assert same_vote.id == vote.id
-
-    flipped_vote = CommentVoteService.vote_on_comment(
-        db_session,
-        comment.id,
-        CommentVoteCreate(vote_type=-1),
-        user.id,
-    )
-    assert flipped_vote.id == vote.id
-    assert flipped_vote.vote_type == -1

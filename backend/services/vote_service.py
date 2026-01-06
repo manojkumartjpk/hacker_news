@@ -17,17 +17,11 @@ class VoteService:
             Vote.post_id == post_id
         ).first()
         if existing_vote:
-            if existing_vote.vote_type == vote.vote_type:
-                return existing_vote
-            existing_vote.vote_type = vote.vote_type
-            db.commit()
-            db.refresh(existing_vote)
             vote_obj = existing_vote
         else:
             db_vote = Vote(
                 user_id=user_id,
-                post_id=post_id,
-                vote_type=vote.vote_type
+                post_id=post_id
             )
             db.add(db_vote)
             try:
@@ -68,3 +62,18 @@ class VoteService:
             db.delete(existing_vote)
             db.commit()
             PostService.update_post_score(db, post_id)
+
+    @staticmethod
+    def get_user_votes_for_posts(db: Session, user_id: int, post_ids: list[int]) -> list[dict]:
+        if not post_ids:
+            return []
+        unique_ids = list(dict.fromkeys(post_ids))
+        votes = db.query(Vote.post_id).filter(
+            Vote.user_id == user_id,
+            Vote.post_id.in_(unique_ids)
+        ).all()
+        vote_map = {post_id: 1 for (post_id,) in votes}
+        return [
+            {"post_id": post_id, "vote_type": vote_map.get(post_id, 0)}
+            for post_id in unique_ids
+        ]

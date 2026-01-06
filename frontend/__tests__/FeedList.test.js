@@ -12,7 +12,7 @@ jest.mock('../lib/api', () => ({
   postsAPI: {
     getPosts: jest.fn(),
     vote: jest.fn(),
-    getVote: jest.fn(),
+    getVotesBulk: jest.fn(),
     unvote: jest.fn(),
   },
 }));
@@ -54,7 +54,7 @@ describe('FeedList', () => {
         },
       ],
     });
-    postsAPI.getVote.mockResolvedValue({ data: { vote_type: 0 } });
+    postsAPI.getVotesBulk.mockResolvedValue({ data: [{ post_id: 1, vote_type: 0 }] });
   });
 
   it('renders posts after loading', async () => {

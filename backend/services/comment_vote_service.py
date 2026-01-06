@@ -18,17 +18,11 @@ class CommentVoteService:
             CommentVote.comment_id == comment_id
         ).first()
         if existing_vote:
-            if existing_vote.vote_type == vote.vote_type:
-                return existing_vote
-            existing_vote.vote_type = vote.vote_type
-            db.commit()
-            db.refresh(existing_vote)
             return existing_vote
 
         db_vote = CommentVote(
             user_id=user_id,
-            comment_id=comment_id,
-            vote_type=vote.vote_type
+            comment_id=comment_id
         )
         db.add(db_vote)
         try:
@@ -41,7 +35,7 @@ class CommentVoteService:
 
     @staticmethod
     def get_comment_score(db: Session, comment_id: int) -> int:
-        score = db.query(func.coalesce(func.sum(CommentVote.vote_type), 0)).filter(
+        score = db.query(func.count(CommentVote.id)).filter(
             CommentVote.comment_id == comment_id
         ).scalar()
         return int(score or 0)

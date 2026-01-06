@@ -241,8 +241,8 @@ class PostService:
     @staticmethod
     def update_post_score(db: Session, post_id: int):
         # Calculate score from votes
-        votes = db.query(Vote).filter(Vote.post_id == post_id).all()
-        score = sum(vote.vote_type for vote in votes)
+        score = db.query(func.count(Vote.id)).filter(Vote.post_id == post_id).scalar()
+        score = int(score or 0)
 
         # Update in database
         post = db.query(Post).filter(Post.id == post_id).first()

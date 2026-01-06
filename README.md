@@ -235,3 +235,18 @@ The application uses the following main entities:
    - Documentation drafting
    - Code review and refactoring suggestions
    - github actions CI setup
+
+## TODO
+- Typescript conversion for frontend
+- Next js app directory migration
+- Better Scoring algorithm
+- Tailwind CSS integration (remove inline styles)
+- UUID primary keys
+- User deletion flow - Soft delete for posts/users
+- replace utcnow() with timezone.now()
+- improve error handling and logging
+- Moderation and abuse monitoring flow
+- add test to ci/cd pipeline
+- user profile/karma/settings pages
+- post edit and delete flows
+- email/push notifications

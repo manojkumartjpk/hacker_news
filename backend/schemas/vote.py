@@ -1,18 +1,17 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
-class VoteBase(BaseModel):
-    vote_type: int  # 1 or -1
-
-class VoteCreate(VoteBase):
-    pass
-
-class Vote(VoteBase):
-    id: int
-    user_id: int
-    post_id: int
-
-    model_config = ConfigDict(from_attributes=True)
+class VoteCreate(BaseModel):
+    vote_type: int = 1
 
 
 class VoteStatus(BaseModel):
+    vote_type: int
+
+
+class VoteBulkRequest(BaseModel):
+    post_ids: list[int]
+
+
+class VoteStatusWithPost(BaseModel):
+    post_id: int
     vote_type: int
