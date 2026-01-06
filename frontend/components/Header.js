@@ -11,7 +11,8 @@ export default function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const sort = searchParams.get('sort') || 'new';
+  const sortParam = searchParams.get('sort') || 'new';
+  const sort = ['new', 'past'].includes(sortParam) ? sortParam : 'new';
 
   useEffect(() => {
     const authStatus = Cookies.get('auth_status');
@@ -67,8 +68,7 @@ export default function Header() {
                     <a href="/">Hacker News</a>
                   </b>
                   <a href="/" className={pathname === '/' && sort === 'new' ? 'topsel' : ''}>new</a> |{' '}
-                  <a href="/?sort=top" className={pathname === '/' && sort === 'top' ? 'topsel' : ''}>past</a> |{' '}
-                  <a href="/?sort=best" className={pathname === '/' && sort === 'best' ? 'topsel' : ''}>best</a> |{' '}
+                  <a href="/?sort=past" className={pathname === '/' && sort === 'past' ? 'topsel' : ''}>past</a> |{' '}
                   <a href="/comments" className={pathname === '/comments' ? 'topsel' : ''}>comments</a> |{' '}
                   <a href="/ask" className={pathname === '/ask' ? 'topsel' : ''}>ask</a> |{' '}
                   <a href="/show" className={pathname === '/show' ? 'topsel' : ''}>show</a> |{' '}

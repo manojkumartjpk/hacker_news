@@ -1,3 +1,4 @@
+from datetime import date, datetime, timezone
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -51,15 +52,53 @@ def test_get_posts_caches_and_sorts(db_session):
     db_session.commit()
     db_session.refresh(user)
 
-    post_low = Post(title="Low", url=None, text="Body", post_type="story", user_id=user.id, score=1)
-    post_high = Post(title="High", url=None, text="Body", post_type="story", user_id=user.id, score=10)
+    post_low = Post(title="Low", url=None, text="Body", post_type="story", user_id=user.id, points=1)
+    post_high = Post(title="High", url=None, text="Body", post_type="story", user_id=user.id, points=10)
     db_session.add_all([post_low, post_high])
     db_session.commit()
 
-    first = PostService.get_posts(db_session, sort="top", skip=0, limit=10, post_type=None)
-    second = PostService.get_posts(db_session, sort="top", skip=0, limit=10, post_type=None)
+    first = PostService.get_posts(db_session, sort="past", skip=0, limit=10, post_type=None)
+    second = PostService.get_posts(db_session, sort="past", skip=0, limit=10, post_type=None)
     assert first[0]["title"] == "High"
     assert second[0]["title"] == "High"
+
+
+@pytest.mark.unit
+def test_get_posts_filters_by_day_when_past(db_session):
+    user = User(username="day", email="day@example.com", hashed_password=get_password_hash("Password1!"))
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    post_day1 = Post(
+        title="Day One",
+        url=None,
+        text="Body",
+        post_type="story",
+        user_id=user.id,
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+    )
+    post_day2 = Post(
+        title="Day Two",
+        url=None,
+        text="Body",
+        post_type="story",
+        user_id=user.id,
+        created_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+    )
+    db_session.add_all([post_day1, post_day2])
+    db_session.commit()
+
+    results = PostService.get_posts(
+        db_session,
+        sort="past",
+        day=date(2024, 1, 1),
+        skip=0,
+        limit=10,
+        post_type=None,
+    )
+    assert len(results) == 1
+    assert results[0]["title"] == "Day One"
 
 
 @pytest.mark.unit
@@ -133,19 +172,7 @@ def test_delete_post_missing(db_session):
 
 
 @pytest.mark.unit
-def test_get_cached_score_reads_redis(monkeypatch):
-    monkeypatch.setattr(post_service, "redis_get", lambda key: "5")
-    assert PostService.get_cached_score(1) == 5
-
-
-@pytest.mark.unit
-def test_get_cached_score_defaults_to_zero(monkeypatch):
-    monkeypatch.setattr(post_service, "redis_get", lambda key: None)
-    assert PostService.get_cached_score(123) == 0
-
-
-@pytest.mark.unit
-def test_update_post_score_recalculates(db_session):
+def test_adjust_post_points_updates(db_session):
     user = User(username="derek", email="derek@example.com", hashed_password=get_password_hash("Password1!"))
     db_session.add(user)
     db_session.commit()
@@ -157,8 +184,8 @@ def test_update_post_score_recalculates(db_session):
     db_session.refresh(post)
 
     VoteService.vote_on_post(db_session, post.id, VoteCreate(vote_type=1), user.id)
-    score = PostService.update_post_score(db_session, post.id)
-    assert score == 1
+    db_session.refresh(post)
+    assert post.points == 1
 
 
 @pytest.mark.unit

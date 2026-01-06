@@ -40,7 +40,7 @@ class PostUpdate(BaseModel):
 
 class Post(PostBase):
     id: int
-    score: int
+    points: int
     comment_count: int
     user_id: int
     created_at: datetime

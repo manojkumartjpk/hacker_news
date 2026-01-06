@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import func
 from models import CommentVote, Comment
 from schemas import CommentVoteCreate
 from fastapi import HTTPException
@@ -32,13 +31,6 @@ class CommentVoteService:
         except IntegrityError:
             db.rollback()
             raise HTTPException(status_code=409, detail="Vote creation failed")
-
-    @staticmethod
-    def get_comment_score(db: Session, comment_id: int) -> int:
-        score = db.query(func.count(CommentVote.id)).filter(
-            CommentVote.comment_id == comment_id
-        ).scalar()
-        return int(score or 0)
 
     @staticmethod
     def get_user_vote_on_comment(db: Session, comment_id: int, user_id: int) -> CommentVote:

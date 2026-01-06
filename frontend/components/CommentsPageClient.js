@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import Cookies from 'js-cookie';
 import { commentsAPI } from '../lib/api';
 import { timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
@@ -15,12 +16,43 @@ export default function CommentsPageClient() {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [commentVotes, setCommentVotes] = useState({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const { page, skip } = getPagination(searchParams, COMMENTS_PER_PAGE);
+  const nextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
 
   useEffect(() => {
     fetchComments();
   }, [page]);
+
+  useEffect(() => {
+    const authStatus = Cookies.get('auth_status');
+    setIsLoggedIn(!!authStatus);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn || comments.length === 0) {
+      setCommentVotes({});
+      return;
+    }
+    const ids = comments.map((comment) => comment.id);
+    const fetchVotes = async () => {
+      try {
+        const response = await commentsAPI.getVotesBulk(ids);
+        const voteMap = response.data.reduce((accumulator, vote) => {
+          accumulator[vote.comment_id] = vote.vote_type;
+          return accumulator;
+        }, {});
+        setCommentVotes(voteMap);
+      } catch (voteError) {
+        setCommentVotes({});
+      }
+    };
+    fetchVotes();
+  }, [comments, isLoggedIn]);
 
   const fetchComments = async () => {
     try {
@@ -54,6 +86,33 @@ export default function CommentsPageClient() {
         {comments.map((comment) => (
           <React.Fragment key={comment.id}>
             <tr className="athing">
+              <td className="ind"></td>
+              <td className="votelinks">
+                <center>
+                  {commentVotes[comment.id] === 1 ? (
+                    <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                  ) : (
+                    <a
+                      href="#"
+                      onClick={async (event) => {
+                        event.preventDefault();
+                        if (!isLoggedIn) {
+                          router.replace(`/login?next=${encodeURIComponent(nextUrl)}&vote=1&comment=${comment.id}`);
+                          return;
+                        }
+                        try {
+                          await commentsAPI.vote(comment.id, { vote_type: 1 });
+                          setCommentVotes((prev) => ({ ...prev, [comment.id]: 1 }));
+                        } catch (voteError) {
+                          setError(getErrorMessage(voteError, 'Failed to vote. Please try again.'));
+                        }
+                      }}
+                    >
+                      <div className="votearrow" title="upvote"></div>
+                    </a>
+                  )}
+                </center>
+              </td>
               <td className="default">
                 <div className="comhead">
                   <a href={`/user/${comment.username}`} className="hnuser">
@@ -63,17 +122,19 @@ export default function CommentsPageClient() {
                   <span className="age" title={new Date(comment.created_at).toISOString()}>
                     <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
                   </span>
-                  {' '}
-                  <a href={`/post/${comment.post_id}?id=${comment.id}`}>context</a>
-                  {' | '}
-                  {comment.parent_id && (
-                    <>
-                      <a href={`/post/${comment.post_id}?id=${comment.parent_id}`}>parent</a>
-                      {' | '}
-                    </>
-                  )}
-                  <span className="on">
-                    on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
+                  <span className="navs">
+                    {comment.parent_id && (
+                      <>
+                        {' '}
+                        | <a href={`/post/${comment.post_id}?id=${comment.parent_id}`}>parent</a>
+                      </>
+                    )}
+                    {' '}
+                    | <a href={`/post/${comment.post_id}?id=${comment.id}`}>context</a>
+                    <span className="onstory">
+                      {' '}
+                      | on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
+                    </span>
                   </span>
                 </div>
                 <div className="comment">
@@ -81,13 +142,14 @@ export default function CommentsPageClient() {
                 </div>
               </td>
             </tr>
-            <tr className="spacer" style={{ height: '10px' }}></tr>
+            <tr className="spacer" style={{ height: '15px' }}></tr>
           </React.Fragment>
         ))}
         <tr className="spacer" style={{ height: '10px' }}></tr>
         <tr>
+          <td colSpan="2"></td>
           <td className="title">
-            <a href={`/comments?p=${page + 1}`}>More</a>
+            <a href={`/comments?p=${page + 1}`} className="morelink" rel="next">More</a>
           </td>
         </tr>
       </tbody>

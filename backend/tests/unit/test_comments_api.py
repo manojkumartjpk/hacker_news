@@ -29,7 +29,15 @@ def test_create_comments_threaded(client, auth_headers):
     assert thread_response.status_code == 200
     thread = thread_response.json()
     assert len(thread) == 1
-    assert thread[0]["replies"][0]["text"] == "Reply"
+    top_comment = thread[0]
+    reply_comment = top_comment["replies"][0]
+    assert reply_comment["text"] == "Reply"
+    assert top_comment["root_id"] == top_comment["id"]
+    assert reply_comment["root_id"] == top_comment["id"]
+    assert top_comment["prev_id"] is None
+    assert top_comment["next_id"] == reply_comment["id"]
+    assert reply_comment["prev_id"] == top_comment["id"]
+    assert reply_comment["next_id"] is None
 
 
 @pytest.mark.unit
@@ -147,6 +155,7 @@ def test_get_comment_detail(client, auth_headers):
     assert body["id"] == comment_id
     assert body["post_id"] == post_id
     assert body["text"] == "Detail comment"
+    assert body["root_id"] == comment_id
 
 
 @pytest.mark.unit

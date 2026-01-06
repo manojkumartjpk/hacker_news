@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -24,13 +25,14 @@ def create_post(
 def get_posts(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    sort: str = Query("new", pattern="^(new|top|best)$"),
+    sort: str = Query("new", pattern="^(new|past)$"),
+    day: date | None = Query(None),
     post_type: str | None = Query(None, pattern="^(story|ask|show|job)$"),
     db: Session = Depends(get_db),
     rate_limited: bool = Depends(rate_limit())
 ):
     """List posts with optional paging, sorting, and filtering."""
-    posts = PostService.get_posts(db, skip=skip, limit=limit, sort=sort, post_type=post_type)
+    posts = PostService.get_posts(db, skip=skip, limit=limit, sort=sort, day=day, post_type=post_type)
     return posts
 
 @router.get("/search", response_model=List[Post])

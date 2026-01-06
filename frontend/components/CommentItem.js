@@ -4,19 +4,32 @@ import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import { commentsAPI } from '../lib/api';
-import { pointsLabel, timeAgo } from '../lib/format';
+import { timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
 
 const MAX_NESTING = 5; // Prevent runaway nesting in deep reply threads.
 const BASE_INDENT = 16;
 
-export default function CommentItem({ comment, depth = 0, onRefresh, currentUser, commentVotes = {} }) {
+export default function CommentItem({
+  comment,
+  depth = 0,
+  onRefresh,
+  currentUser,
+  commentVotes = {},
+  focusedCommentId = null,
+}) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userVote, setUserVote] = useState(0);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
+  const isFocused = Number(focusedCommentId) === Number(comment.id);
+  const hasParent = comment.parent_id !== null && comment.parent_id !== undefined;
+  const rootId = comment.root_id ?? null;
+  const prevId = comment.prev_id ?? null;
+  const nextId = comment.next_id ?? null;
 
   useEffect(() => {
     // Client-side auth check to toggle reply/vote affordances.
@@ -59,7 +72,7 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
 
   return (
     <>
-      <tr className="comtr">
+      <tr className={`comtr${isFocused ? ' focused' : ''}`} id={`comment-${comment.id}`}>
         <td className="default" style={{ paddingLeft: `${BASE_INDENT + depth * 40}px` }}>
           <div className="comment-head">
             <div className="comment-votelinks">
@@ -91,10 +104,6 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
               )}
             </div>
             <span className="comhead">
-              <span className="score">
-                {comment.score} {pointsLabel(comment.score)}
-              </span>
-              {' '}
               <a href={`/user/${comment.username}`} className="hnuser">
                 {comment.username}
               </a>
@@ -103,59 +112,62 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
                 <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
               </span>
               {' '}
-              {isLoggedIn && userVote !== 0 && (
-                <>
-                  <a
-                    href="#"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      try {
-                        await commentsAPI.unvote(comment.id);
-                        setUserVote(0);
-                        if (onRefresh) {
-                          onRefresh();
+              <span className="navs">
+                {isLoggedIn && userVote !== 0 && (
+                  <>
+                    <a
+                      href="#"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        try {
+                          await commentsAPI.unvote(comment.id);
+                          setUserVote(0);
+                          if (onRefresh) {
+                            onRefresh();
+                          }
+                        } catch (error) {
+                          alert(getErrorMessage(error, 'Failed to remove vote. Please try again.'));
                         }
-                      } catch (error) {
-                        alert(getErrorMessage(error, 'Failed to remove vote. Please try again.'));
-                      }
-                    }}
-                  >
-                    unvote
-                  </a>
-                  {' '}
-                </>
-              )}
-              {isLoggedIn && depth < MAX_NESTING ? (
-                <a href={`/reply/${comment.id}`}>reply</a>
-              ) : !isLoggedIn ? (
-                <a href={`/login?next=/reply/${comment.id}`}>reply</a>
-              ) : null}
-              {currentUser?.id === comment.user_id && (
-                <>
-                  {' | '}
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsEditing(!isEditing);
-                      setShowDeleteConfirm(false);
-                    }}
-                  >
-                    edit
-                  </a>
-                  {' | '}
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowDeleteConfirm(!showDeleteConfirm);
-                      setIsEditing(false);
-                    }}
-                  >
-                    delete
-                  </a>
-                </>
-              )}
+                      }}
+                    >
+                      unvote
+                    </a>
+                  </>
+                )}
+                {hasParent && (
+                  <>
+                    {' | '}
+                    <a href={`#comment-${comment.parent_id}`}>parent</a>
+                  </>
+                )}
+                {rootId && rootId !== comment.id && (
+                  <>
+                    {' | '}
+                    <a href={`#comment-${rootId}`}>root</a>
+                  </>
+                )}
+                {prevId && (
+                  <>
+                    {' | '}
+                    <a href={`#comment-${prevId}`}>prev</a>
+                  </>
+                )}
+                {nextId && (
+                  <>
+                    {' | '}
+                    <a href={`#comment-${nextId}`}>next</a>
+                  </>
+                )}
+                {' '}
+                <button
+                  type="button"
+                  className="comment-toggle"
+                  aria-expanded={!isCollapsed}
+                  onClick={() => setIsCollapsed((prev) => !prev)}
+                >
+                  [{isCollapsed ? '+' : '–'}]
+                </button>
+              </span>
             </span>
           </div>
           {isEditing ? (
@@ -181,11 +193,46 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="comment">
-              {comment.text}
-            </div>
-          )}
+          ) : !isCollapsed ? (
+            <>
+              <div className="comment">
+                {comment.text}
+              </div>
+              <div className="comment-actions">
+                {isLoggedIn && depth < MAX_NESTING ? (
+                  <a href={`/reply/${comment.id}`}>reply</a>
+                ) : !isLoggedIn ? (
+                  <a href={`/login?next=/reply/${comment.id}`}>reply</a>
+                ) : null}
+                {currentUser?.id === comment.user_id && (
+                  <>
+                    {' | '}
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsEditing(!isEditing);
+                        setShowDeleteConfirm(false);
+                      }}
+                    >
+                      edit
+                    </a>
+                    {' | '}
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowDeleteConfirm(!showDeleteConfirm);
+                        setIsEditing(false);
+                      }}
+                    >
+                      delete
+                    </a>
+                  </>
+                )}
+              </div>
+            </>
+          ) : null}
 
           {showDeleteConfirm && (
             <div className="comment-delete">
@@ -200,7 +247,7 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
       </tr>
 
       {/* Recursive render for nested replies. */}
-      {comment.replies && depth < MAX_NESTING && comment.replies.map((reply) => (
+      {!isCollapsed && comment.replies && depth < MAX_NESTING && comment.replies.map((reply) => (
         <CommentItem
           key={reply.id}
           comment={reply}
@@ -208,6 +255,7 @@ export default function CommentItem({ comment, depth = 0, onRefresh, currentUser
           onRefresh={onRefresh}
           currentUser={currentUser}
           commentVotes={commentVotes}
+          focusedCommentId={focusedCommentId}
         />
       ))}
     </>

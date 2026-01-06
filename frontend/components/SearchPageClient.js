@@ -118,7 +118,7 @@ export default function SearchPageClient() {
                 <td colSpan="2"></td>
                 <td className="subtext">
                   <span className="subline">
-                    <span className="score" id={`score_${post.id}`}>{post.score} {pointsLabel(post.score)}</span> by{' '}
+                    <span className="points" id={`points_${post.id}`}>{post.points} {pointsLabel(post.points)}</span> by{' '}
                     <a href={`/user/${post.username}`} className="hnuser">
                       {post.username}
                     </a>{' '}

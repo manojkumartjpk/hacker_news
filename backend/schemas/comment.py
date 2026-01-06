@@ -32,9 +32,12 @@ class Comment(CommentBase):
     user_id: int
     post_id: int
     parent_id: Optional[int]
+    root_id: Optional[int] = None
+    prev_id: Optional[int] = None
+    next_id: Optional[int] = None
     created_at: datetime
+    updated_at: datetime
     username: str  # Add username field
-    score: int
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -51,9 +54,12 @@ class CommentFeedItem(BaseModel):
     user_id: int
     post_id: int
     parent_id: Optional[int]
+    root_id: Optional[int] = None
+    prev_id: Optional[int] = None
+    next_id: Optional[int] = None
     created_at: datetime
+    updated_at: datetime
     username: str
     post_title: str
-    score: int
 
     model_config = ConfigDict(from_attributes=True)

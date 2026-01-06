@@ -29,7 +29,7 @@ describe('PostItem', () => {
       url: 'https://example.com',
       text: null,
       post_type: 'story',
-      score: 10,
+      points: 10,
       comment_count: 0,
       user_id: 1,
       username: 'alice',
@@ -43,7 +43,7 @@ describe('PostItem', () => {
     expect(screen.getByText(/example\.com/)).toBeInTheDocument();
   });
 
-  it('upvotes and updates score locally', async () => {
+  it('upvotes and updates points locally', async () => {
     const user = userEvent.setup();
     const post = {
       id: 2,
@@ -51,7 +51,7 @@ describe('PostItem', () => {
       url: 'https://example.com',
       text: null,
       post_type: 'story',
-      score: 10,
+      points: 10,
       comment_count: 0,
       user_id: 1,
       username: 'alice',
@@ -79,7 +79,7 @@ describe('PostItem', () => {
       url: null,
       text: 'Body',
       post_type: 'story',
-      score: 1,
+      points: 1,
       comment_count: 0,
       user_id: 1,
       username: 'alice',
@@ -103,7 +103,7 @@ describe('PostItem', () => {
       url: 'https://example.com',
       text: null,
       post_type: 'story',
-      score: 1,
+      points: 1,
       comment_count: 0,
       user_id: 1,
       username: 'alice',
@@ -131,7 +131,7 @@ describe('PostItem', () => {
       url: 'https://example.com',
       text: null,
       post_type: 'story',
-      score: 5,
+      points: 5,
       comment_count: 0,
       user_id: 1,
       username: 'alice',
@@ -151,7 +151,7 @@ describe('PostItem', () => {
     expect(screen.getByText(/4 points by/i)).toBeInTheDocument();
   });
 
-  it('adjusts score when switching from upvote to downvote', async () => {
+  it('adjusts points when switching from upvote to downvote', async () => {
     const user = userEvent.setup();
     postsAPI.getVote.mockResolvedValueOnce({ data: { vote_type: 1 } });
     const post = {
@@ -160,7 +160,7 @@ describe('PostItem', () => {
       url: 'https://example.com',
       text: null,
       post_type: 'story',
-      score: 10,
+      points: 10,
       comment_count: 0,
       user_id: 1,
       username: 'alice',
@@ -176,7 +176,7 @@ describe('PostItem', () => {
     expect(screen.getByText(/8 points by/i)).toBeInTheDocument();
   });
 
-  it('adjusts score when switching from downvote to upvote', async () => {
+  it('adjusts points when switching from downvote to upvote', async () => {
     const user = userEvent.setup();
     postsAPI.getVote.mockResolvedValueOnce({ data: { vote_type: -1 } });
     const post = {
@@ -185,7 +185,7 @@ describe('PostItem', () => {
       url: 'https://example.com',
       text: null,
       post_type: 'story',
-      score: 10,
+      points: 10,
       comment_count: 0,
       user_id: 1,
       username: 'alice',
@@ -209,7 +209,7 @@ describe('PostItem', () => {
       url: null,
       text: 'Body',
       post_type: 'story',
-      score: 2,
+      points: 2,
       comment_count: 0,
       user_id: 1,
       username: 'alice',

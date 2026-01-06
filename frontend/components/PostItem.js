@@ -8,7 +8,7 @@ import { getErrorMessage } from '../lib/errors';
 
 export default function PostItem({ post, onVote }) {
   const [userVote, setUserVote] = useState(0);
-  const [score, setScore] = useState(post.score);
+  const [points, setPoints] = useState(post.points);
   const hostname = safeHostname(post.url);
 
   useEffect(() => {
@@ -28,8 +28,8 @@ export default function PostItem({ post, onVote }) {
     try {
       await postsAPI.vote(post.id, { vote_type: voteType });
       setUserVote(voteType);
-      // Update score locally (in real app, might refetch or use websocket)
-      setScore(prev => prev + (voteType === 1 ? 1 : -1) - (userVote === 1 ? 1 : userVote === -1 ? -1 : 0));
+      // Update points locally (in real app, might refetch or use websocket)
+      setPoints(prev => prev + (voteType === 1 ? 1 : -1) - (userVote === 1 ? 1 : userVote === -1 ? -1 : 0));
       if (onVote) onVote();
     } catch (error) {
       alert(getErrorMessage(error, 'Failed to vote. Please try again.'));
@@ -69,7 +69,7 @@ export default function PostItem({ post, onVote }) {
         )}
       </div>
       <div className="hn-post-meta">
-        {score} points by{' '}
+        {points} points by{' '}
         <Link href={`/user/${post.username}`} className="hn-comment-link">
           {post.username}
         </Link>{' '}

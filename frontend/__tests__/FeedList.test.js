@@ -46,7 +46,7 @@ describe('FeedList', () => {
           url: 'https://example.com',
           text: null,
           post_type: 'story',
-          score: 3,
+          points: 3,
           comment_count: 0,
           user_id: 1,
           username: 'alice',
@@ -69,10 +69,10 @@ describe('FeedList', () => {
   it('falls back to default sort when invalid', async () => {
     Cookies.get.mockReturnValue('token');
     searchParamsValue = 'sort=invalid';
-    render(<FeedList defaultSort="top" />);
+    render(<FeedList defaultSort="past" />);
 
     await waitFor(() => expect(postsAPI.getPosts).toHaveBeenCalled());
-    expect(postsAPI.getPosts).toHaveBeenCalledWith(expect.objectContaining({ sort: 'top' }));
+    expect(postsAPI.getPosts).toHaveBeenCalledWith(expect.objectContaining({ sort: 'past' }));
   });
 
   it('defaults to page 1 when page param is invalid', async () => {
@@ -96,11 +96,22 @@ describe('FeedList', () => {
 
   it('includes sort param in More link when non-default', async () => {
     Cookies.get.mockReturnValue('token');
-    searchParamsValue = 'sort=top';
+    searchParamsValue = 'sort=past';
     render(<FeedList defaultSort="new" />);
 
     await waitFor(() => expect(screen.getByText('Hello Feed')).toBeInTheDocument());
-    expect(screen.getByText('More').getAttribute('href')).toBe('/news?p=2&sort=top');
+    expect(screen.getByText('More').getAttribute('href')).toBe('/news?p=2&sort=past&day=2024-01-01');
+  });
+
+  it('passes day param when viewing past', async () => {
+    Cookies.get.mockReturnValue('token');
+    searchParamsValue = 'sort=past&day=2024-01-01';
+    render(<FeedList defaultSort="new" />);
+
+    await waitFor(() => expect(postsAPI.getPosts).toHaveBeenCalled());
+    expect(postsAPI.getPosts).toHaveBeenCalledWith(
+      expect.objectContaining({ sort: 'past', day: '2024-01-01' }),
+    );
   });
 
   it('redirects to login when voting while logged out', async () => {
@@ -116,13 +127,13 @@ describe('FeedList', () => {
 
   it('preserves query string when redirecting for votes', async () => {
     Cookies.get.mockReturnValue(undefined);
-    searchParamsValue = 'sort=top&p=2';
+    searchParamsValue = 'sort=past&p=2';
     render(<FeedList />);
 
     await waitFor(() => expect(screen.getByText('Hello Feed')).toBeInTheDocument());
     await userEvent.click(screen.getByTitle('upvote'));
 
-    expect(replace).toHaveBeenCalledWith('/login?next=%2Fnews%3Fsort%3Dtop%26p%3D2&vote=1&post=1');
+    expect(replace).toHaveBeenCalledWith('/login?next=%2Fnews%3Fsort%3Dpast%26p%3D2&vote=1&post=1');
   });
 
   it('shows the error message when fetch fails', async () => {
@@ -233,7 +244,7 @@ describe('FeedList', () => {
     });
   });
 
-  it('renders job metadata without score', async () => {
+  it('renders job metadata without points', async () => {
     Cookies.get.mockReturnValue('token');
     postsAPI.getPosts.mockResolvedValueOnce({
       data: [
@@ -243,7 +254,7 @@ describe('FeedList', () => {
           url: 'https://example.com',
           text: null,
           post_type: 'job',
-          score: 0,
+          points: 0,
           comment_count: 0,
           user_id: 1,
           username: 'alice',
@@ -267,7 +278,7 @@ describe('FeedList', () => {
           url: null,
           text: 'Body',
           post_type: 'story',
-          score: 2,
+          points: 2,
           comment_count: 2,
           user_id: 1,
           username: 'alice',
@@ -291,7 +302,7 @@ describe('FeedList', () => {
           url: 'not-a-url',
           text: null,
           post_type: 'story',
-          score: 1,
+          points: 1,
           comment_count: 0,
           user_id: 1,
           username: 'alice',

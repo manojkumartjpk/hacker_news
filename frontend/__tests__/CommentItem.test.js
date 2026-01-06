@@ -37,7 +37,6 @@ describe('CommentItem', () => {
     parent_id: null,
     created_at: '2024-01-01T00:00:00Z',
     username: 'alice',
-    score: 0,
     replies: [],
   };
 
@@ -342,7 +341,6 @@ describe('CommentItem', () => {
           parent_id: 10,
           created_at: '2024-01-01T00:00:00Z',
           username: 'bob',
-          score: 0,
           replies: [],
         },
       ],

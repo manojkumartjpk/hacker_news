@@ -17,7 +17,7 @@ class VoteService:
             Vote.post_id == post_id
         ).first()
         if existing_vote:
-            vote_obj = existing_vote
+            return existing_vote
         else:
             db_vote = Vote(
                 user_id=user_id,
@@ -27,13 +27,12 @@ class VoteService:
             try:
                 db.commit()
                 db.refresh(db_vote)
+                # Update post points after a new vote.
+                PostService.adjust_post_points(db, post_id, 1)
                 vote_obj = db_vote
             except IntegrityError:
                 db.rollback()
                 raise HTTPException(status_code=409, detail="Vote creation failed")
-
-        # Update post score after voting
-        PostService.update_post_score(db, post_id)
 
         return vote_obj
 
@@ -61,7 +60,7 @@ class VoteService:
         if existing_vote:
             db.delete(existing_vote)
             db.commit()
-            PostService.update_post_score(db, post_id)
+            PostService.adjust_post_points(db, post_id, -1)
 
     @staticmethod
     def get_user_votes_for_posts(db: Session, user_id: int, post_ids: list[int]) -> list[dict]:

@@ -12,12 +12,47 @@ import { getPagination } from '../lib/pagination';
 
 const POSTS_PER_PAGE = 30;
 
+const toISODate = (date) => date.toISOString().slice(0, 10);
+
+const parseDayParam = (value) => {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed;
+};
+
+const addUtcDays = (date, delta) => (
+  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + delta))
+);
+
+const addUtcMonths = (date, delta) => (
+  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + delta, date.getUTCDate()))
+);
+
+const addUtcYears = (date, delta) => (
+  new Date(Date.UTC(date.getUTCFullYear() + delta, date.getUTCMonth(), date.getUTCDate()))
+);
+
+const formatUtcDate = (date) => (
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date)
+);
+
 export default function FeedList({ defaultSort = 'new', postType = null }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
   const sortParam = searchParams.get('sort') || defaultSort;
-  const sort = ['new', 'top', 'best'].includes(sortParam) ? sortParam : defaultSort;
+  const sort = ['new', 'past'].includes(sortParam) ? sortParam : defaultSort;
+  const dayParam = searchParams.get('day');
   const { page, skip } = getPagination(searchParams, POSTS_PER_PAGE);
 
   const [posts, setPosts] = useState([]);
@@ -28,7 +63,7 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
 
   useEffect(() => {
     fetchPosts();
-  }, [sort, page, postType]);
+  }, [sort, page, postType, dayParam]);
 
   useEffect(() => {
     const authStatus = Cookies.get('auth_status');
@@ -57,6 +92,9 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
       setLoading(true);
       setError('');
       const params = { sort, limit: POSTS_PER_PAGE, skip };
+      if (sort === 'past' && dayParam) {
+        params.day = dayParam;
+      }
       if (postType) {
         params.post_type = postType;
       }
@@ -104,6 +142,24 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
     return <InlineError message={error} />;
   }
 
+  const parsedDay = parseDayParam(dayParam);
+  const selectedDay = sort === 'past'
+    ? (parsedDay || (posts[0]?.created_at ? new Date(posts[0].created_at) : null))
+    : null;
+  const selectedDayIso = selectedDay ? toISODate(selectedDay) : null;
+  const pastHeader = sort === 'past' && selectedDay ? (
+    <div className="hn-past-header">
+      <div>Stories from {formatUtcDate(selectedDay)} (UTC)</div>
+      <div className="hn-past-nav">
+        Go back a{' '}
+        <a href={`${pathname}?sort=past&day=${toISODate(addUtcDays(selectedDay, -1))}`}>day</a>,{' '}
+        <a href={`${pathname}?sort=past&day=${toISODate(addUtcMonths(selectedDay, -1))}`}>month</a>, or{' '}
+        <a href={`${pathname}?sort=past&day=${toISODate(addUtcYears(selectedDay, -1))}`}>year</a>. Go forward a{' '}
+        <a href={`${pathname}?sort=past&day=${toISODate(addUtcDays(selectedDay, 1))}`}>day</a>.
+      </div>
+    </div>
+  ) : null;
+
   if (!posts.length) {
     const isMore = page > 1;
     const emptyMessage = postType === 'job'
@@ -113,120 +169,134 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
         : postType === 'show'
           ? (isMore ? 'No more show posts.' : 'No show posts found.')
           : (isMore ? 'No more posts.' : 'No posts found.');
-    return <div className="hn-loading">{emptyMessage}</div>;
+    return (
+      <>
+        {pastHeader}
+        <div className="hn-loading">{emptyMessage}</div>
+      </>
+    );
   }
 
   return (
-    <table border="0" cellPadding="0" cellSpacing="0">
-      <tbody>
-        {posts.map((post, index) => {
-          const hostname = safeHostname(post.url);
-          const rank = (page - 1) * POSTS_PER_PAGE + index + 1;
-          const userVote = userVotes[post.id] || 0;
-          return (
-            <React.Fragment key={post.id}>
-              <tr className="athing submission">
-                <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
-                  <span className="rank">{rank}.</span>
-                </td>
-                <td style={{ verticalAlign: 'top' }} className="votelinks">
-                  <center>
-                    {userVote === 1 ? (
-                      <div className="votearrow" style={{ visibility: 'hidden' }}></div>
-                    ) : (
-                      <a
-                        id={`up_${post.id}`}
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleVote(post.id);
-                        }}
-                      >
-                        <div className="votearrow" title="upvote"></div>
-                      </a>
-                    )}
-                  </center>
-                </td>
-                <td className="title">
-                  <span className="titleline">
-                    {post.url ? (
-                      <a href={post.url} target="_blank" rel="noopener noreferrer">
-                        {post.title}
-                      </a>
-                    ) : (
-                      <a href={`/post/${post.id}`}>
-                        {post.title}
-                      </a>
-                    )}
-                    {hostname && (
-                      <span className="sitebit comhead">
-                        {' '}
-                        (
-                        <a href={`from?site=${hostname}`}>
-                          <span className="sitestr">{hostname}</span>
+    <>
+      {pastHeader}
+      <table border="0" cellPadding="0" cellSpacing="0">
+        <tbody>
+          {posts.map((post, index) => {
+            const hostname = safeHostname(post.url);
+            const rank = (page - 1) * POSTS_PER_PAGE + index + 1;
+            const userVote = userVotes[post.id] || 0;
+            return (
+              <React.Fragment key={post.id}>
+                <tr className="athing submission">
+                  <td style={{ textAlign: 'right', verticalAlign: 'top' }} className="title">
+                    <span className="rank">{rank}.</span>
+                  </td>
+                  <td style={{ verticalAlign: 'top' }} className="votelinks">
+                    <center>
+                      {userVote === 1 ? (
+                        <div className="votearrow" style={{ visibility: 'hidden' }}></div>
+                      ) : (
+                        <a
+                          id={`up_${post.id}`}
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleVote(post.id);
+                          }}
+                        >
+                          <div className="votearrow" title="upvote"></div>
                         </a>
-                        )
-                      </span>
-                    )}
-                  </span>
-                </td>
-              </tr>
-              <tr>
-                <td colSpan="2"></td>
-                <td className="subtext">
-                  <span className="subline">
-                    {post.post_type === 'job' ? (
-                      <>
-                        <span className="age" title={new Date(post.created_at).toISOString()}>
-                          <a href={`/post/${post.id}`}>{timeAgo(post.created_at)}</a>
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="score" id={`score_${post.id}`}>{post.score} {pointsLabel(post.score)}</span> by{' '}
-                        <a href={`/user/${post.username}`} className="hnuser">
-                          {post.username}
-                        </a>{' '}
-                        <span className="age" title={new Date(post.created_at).toISOString()}>
-                          <a href={`/post/${post.id}`}>{timeAgo(post.created_at)}</a>
-                        </span>{' '}
-                        {isLoggedIn && userVote === 1 && (
-                          <>
-                            |{' '}
-                            <a
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleUnvote(post.id);
-                              }}
-                            >
-                              unvote
-                            </a>{' '}
-                          </>
-                        )}
-                        |{' '}
+                      )}
+                    </center>
+                  </td>
+                  <td className="title">
+                    <span className="titleline">
+                      {post.url ? (
+                        <a href={post.url} target="_blank" rel="noopener noreferrer">
+                          {post.title}
+                        </a>
+                      ) : (
                         <a href={`/post/${post.id}`}>
-                          {post.comment_count > 0
-                            ? `${post.comment_count} ${commentsLabel(post.comment_count)}`
-                            : 'discuss'}
+                          {post.title}
                         </a>
-                      </>
-                    )}
-                  </span>
-                </td>
-              </tr>
-              <tr className="spacer" style={{ height: '5px' }}></tr>
-            </React.Fragment>
-          );
-        })}
-        <tr className="spacer" style={{ height: '10px' }}></tr>
-        <tr>
-          <td colSpan="2"></td>
-          <td className="title">
-            <a href={`${pathname}?p=${page + 1}${sort !== defaultSort ? `&sort=${sort}` : ''}`}>More</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+                      )}
+                      {hostname && (
+                        <span className="sitebit comhead">
+                          {' '}
+                          (
+                          <a href={`from?site=${hostname}`}>
+                            <span className="sitestr">{hostname}</span>
+                          </a>
+                          )
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan="2"></td>
+                  <td className="subtext">
+                    <span className="subline">
+                      {post.post_type === 'job' ? (
+                        <>
+                          <span className="age" title={new Date(post.created_at).toISOString()}>
+                            <a href={`/post/${post.id}`}>{timeAgo(post.created_at)}</a>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="points" id={`points_${post.id}`}>{post.points} {pointsLabel(post.points)}</span> by{' '}
+                          <a href={`/user/${post.username}`} className="hnuser">
+                            {post.username}
+                          </a>{' '}
+                          <span className="age" title={new Date(post.created_at).toISOString()}>
+                            <a href={`/post/${post.id}`}>{timeAgo(post.created_at)}</a>
+                          </span>{' '}
+                          {isLoggedIn && userVote === 1 && (
+                            <>
+                              |{' '}
+                              <a
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleUnvote(post.id);
+                                }}
+                              >
+                                unvote
+                              </a>{' '}
+                            </>
+                          )}
+                          |{' '}
+                          <a href={`/post/${post.id}`}>
+                            {post.comment_count > 0
+                              ? `${post.comment_count} ${commentsLabel(post.comment_count)}`
+                              : 'discuss'}
+                          </a>
+                        </>
+                      )}
+                    </span>
+                  </td>
+                </tr>
+                <tr className="spacer" style={{ height: '5px' }}></tr>
+              </React.Fragment>
+            );
+          })}
+          <tr className="spacer" style={{ height: '10px' }}></tr>
+          <tr>
+            <td colSpan="2"></td>
+            <td className="title">
+              <a
+                href={`${pathname}?p=${page + 1}${sort !== defaultSort ? `&sort=${sort}` : ''}${
+                  sort === 'past' && selectedDayIso ? `&day=${encodeURIComponent(selectedDayIso)}` : ''
+                }`}
+              >
+                More
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </>
   );
 }

@@ -2,7 +2,7 @@ import pytest
 from fastapi import HTTPException
 
 from auth import get_password_hash
-from models import User, Post, Comment, CommentVote
+from models import User, Post, Comment
 from schemas import VoteCreate, CommentVoteCreate
 from services.vote_service import VoteService
 from services.comment_vote_service import CommentVoteService
@@ -43,18 +43,6 @@ def test_get_user_vote_on_post_missing_post(db_session):
 
 
 @pytest.mark.unit
-def test_comment_vote_score(db_session):
-    user, post = _create_user_post(db_session)
-    comment = _create_comment(db_session, user.id, post.id)
-
-    assert CommentVoteService.get_comment_score(db_session, comment.id) == 0
-
-    db_session.add(CommentVote(user_id=user.id, comment_id=comment.id))
-    db_session.commit()
-
-    assert CommentVoteService.get_comment_score(db_session, comment.id) == 1
-
-
 @pytest.mark.unit
 def test_comment_vote_rejects_missing_comment(db_session):
     with pytest.raises(HTTPException):
@@ -73,12 +61,12 @@ def test_vote_service_creates_and_updates_vote(db_session):
     vote = VoteService.vote_on_post(db_session, post.id, VoteCreate(vote_type=1), user.id)
     assert vote is not None
     db_session.refresh(post)
-    assert post.score == 1
+    assert post.points == 1
 
     same_vote = VoteService.vote_on_post(db_session, post.id, VoteCreate(vote_type=1), user.id)
     assert same_vote.id == vote.id
     db_session.refresh(post)
-    assert post.score == 1
+    assert post.points == 1
 
 
 @pytest.mark.unit

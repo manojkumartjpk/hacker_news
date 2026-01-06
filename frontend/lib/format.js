@@ -21,5 +21,5 @@ export const timeAgo = (date) => {
   return `${diffInDays} days ago`;
 };
 
-export const pointsLabel = (score) => (score === 1 ? 'point' : 'points');
+export const pointsLabel = (points) => (points === 1 ? 'point' : 'points');
 export const commentsLabel = (count) => (count === 1 ? 'comment' : 'comments');

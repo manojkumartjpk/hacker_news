@@ -1,24 +1,27 @@
 from sqlalchemy.orm import Session
-from models import Comment, Notification, NotificationType, User, Post, CommentVote
-from sqlalchemy import func
+from sqlalchemy import desc
+from models import Comment, Notification, NotificationType, User, Post
 from schemas import CommentCreate, CommentUpdate
 from services.post_service import PostService
 from fastapi import HTTPException
 
 class CommentService:
     @staticmethod
-    def _build_thread_with_scores(rows: list[tuple[Comment, str, int | None]]) -> list[dict]:
+    def _build_thread(rows: list[tuple[Comment, str]]) -> list[dict]:
         comments_dict: dict[int, dict] = {}
-        for comment, username, score in rows:
+        for comment, username in rows:
             comments_dict[comment.id] = {
                 "id": comment.id,
                 "text": comment.text,
                 "user_id": comment.user_id,
                 "post_id": comment.post_id,
                 "parent_id": comment.parent_id,
+                "root_id": comment.root_id,
+                "prev_id": None,
+                "next_id": None,
                 "created_at": comment.created_at,
+                "updated_at": comment.updated_at,
                 "username": username,
-                "score": score or 0,
                 "replies": []
             }
 
@@ -34,64 +37,44 @@ class CommentService:
             else:
                 top_level_comments.append(comment)
 
-        def aggregate_scores(node: dict) -> int:
-            total = node["score"]
-            for reply in node["replies"]:
-                total += aggregate_scores(reply)
-            node["score"] = total
-            return total
-
         def sort_replies(node: dict) -> None:
             node["replies"].sort(
-                key=lambda item: (item["score"], item["created_at"]),
-                reverse=True
+                key=lambda item: item["created_at"],
+                reverse=True,
             )
             for reply in node["replies"]:
                 sort_replies(reply)
 
-        for comment in top_level_comments:
-            aggregate_scores(comment)
-
         top_level_comments.sort(
-            key=lambda item: (item["score"], item["created_at"]),
-            reverse=True
+            key=lambda item: item["created_at"],
+            reverse=True,
         )
         for comment in top_level_comments:
             sort_replies(comment)
 
+        CommentService._apply_thread_navigation(top_level_comments)
+
         return top_level_comments
 
     @staticmethod
-    def _find_comment_score(comments: list[dict], comment_id: int) -> int | None:
-        for comment in comments:
-            if comment["id"] == comment_id:
-                return comment["score"]
-            if comment.get("replies"):
-                nested_score = CommentService._find_comment_score(comment["replies"], comment_id)
-                if nested_score is not None:
-                    return nested_score
-        return None
+    def _flatten_thread(top_level_comments: list[dict]) -> list[dict]:
+        ordered: list[dict] = []
+
+        def walk(node: dict) -> None:
+            ordered.append(node)
+            for reply in node["replies"]:
+                walk(reply)
+
+        for top_level in top_level_comments:
+            walk(top_level)
+        return ordered
 
     @staticmethod
-    def _get_total_score_for_comment(db: Session, comment_id: int, post_id: int) -> int:
-        comment_score_subq = db.query(
-            CommentVote.comment_id.label("comment_id"),
-            func.count(CommentVote.id).label("score")
-        ).group_by(CommentVote.comment_id).subquery()
-
-        results = db.query(
-            Comment,
-            User.username,
-            comment_score_subq.c.score
-        ).join(User).outerjoin(
-            comment_score_subq,
-            comment_score_subq.c.comment_id == Comment.id
-        ).filter(
-            Comment.post_id == post_id
-        ).all()
-
-        thread = CommentService._build_thread_with_scores(results)
-        return CommentService._find_comment_score(thread, comment_id) or 0
+    def _apply_thread_navigation(top_level_comments: list[dict]) -> None:
+        ordered = CommentService._flatten_thread(top_level_comments)
+        for index, comment in enumerate(ordered):
+            comment["prev_id"] = ordered[index - 1]["id"] if index > 0 else None
+            comment["next_id"] = ordered[index + 1]["id"] if index + 1 < len(ordered) else None
 
     @staticmethod
     def create_comment(db: Session, comment: CommentCreate, post_id: int, user_id: int) -> dict:
@@ -102,22 +85,29 @@ class CommentService:
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
 
+        root_id = None
         if comment.parent_id is not None:
             parent_comment = db.query(Comment).filter(Comment.id == comment.parent_id).first()
             if not parent_comment:
                 raise HTTPException(status_code=404, detail="Parent comment not found")
             if parent_comment.post_id != post_id:
                 raise HTTPException(status_code=400, detail="Parent comment does not belong to this post")
+            root_id = parent_comment.root_id or parent_comment.id
 
         db_comment = Comment(
             text=comment.text,
             user_id=user_id,
             post_id=post_id,
-            parent_id=comment.parent_id
+            parent_id=comment.parent_id,
+            root_id=root_id,
         )
         db.add(db_comment)
         db.commit()
         db.refresh(db_comment)
+        if comment.parent_id is None:
+            db_comment.root_id = db_comment.id
+            db.commit()
+            db.refresh(db_comment)
 
         # Create notification
         CommentService._create_notification_for_comment(db, db_comment)
@@ -132,9 +122,10 @@ class CommentService:
             "user_id": db_comment.user_id,
             "post_id": db_comment.post_id,
             "parent_id": db_comment.parent_id,
+            "root_id": db_comment.root_id,
             "created_at": db_comment.created_at,
+            "updated_at": db_comment.updated_at,
             "username": user.username,
-            "score": 0
         }
 
     @staticmethod
@@ -150,24 +141,14 @@ class CommentService:
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
 
-        # Precompute scores per comment so we can join them in one query.
-        comment_score_subq = db.query(
-            CommentVote.comment_id.label("comment_id"),
-            func.count(CommentVote.id).label("score")
-        ).group_by(CommentVote.comment_id).subquery()
-
         results = db.query(
             Comment,
-            User.username,
-            comment_score_subq.c.score
-        ).join(User).outerjoin(
-            comment_score_subq,
-            comment_score_subq.c.comment_id == Comment.id
+            User.username
         ).filter(
             Comment.post_id == post_id
-        ).order_by(Comment.created_at).all()
+        ).order_by(desc(Comment.created_at)).all()
 
-        return CommentService._build_thread_with_scores(results)
+        return CommentService._build_thread(results)
 
     @staticmethod
     def get_recent_comments(db: Session, skip: int = 0, limit: int = 30) -> list[dict]:
@@ -189,33 +170,25 @@ class CommentService:
                 "user_id": comment.user_id,
                 "post_id": comment.post_id,
                 "parent_id": comment.parent_id,
+                "root_id": comment.root_id,
                 "created_at": comment.created_at,
+                "updated_at": comment.updated_at,
                 "username": username,
-                "post_title": post_title,
-                "score": 0
+                "post_title": post_title
             })
 
         return recent_comments
 
     @staticmethod
     def get_comment_detail(db: Session, comment_id: int) -> dict:
-        comment_score_subq = db.query(
-            CommentVote.comment_id.label("comment_id"),
-            func.count(CommentVote.id).label("score")
-        ).group_by(CommentVote.comment_id).subquery()
-
         result = db.query(
             Comment,
             User.username,
-            Post.title,
-            comment_score_subq.c.score
+            Post.title
         ).select_from(Comment).join(
             User, Comment.user_id == User.id
         ).join(
             Post, Comment.post_id == Post.id
-        ).outerjoin(
-            comment_score_subq,
-            comment_score_subq.c.comment_id == Comment.id
         ).filter(
             Comment.id == comment_id
         ).first()
@@ -223,18 +196,18 @@ class CommentService:
         if not result:
             raise HTTPException(status_code=404, detail="Comment not found")
 
-        comment, username, post_title, score = result
-        total_score = CommentService._get_total_score_for_comment(db, comment_id, comment.post_id)
+        comment, username, post_title = result
         return {
             "id": comment.id,
             "text": comment.text,
             "user_id": comment.user_id,
             "post_id": comment.post_id,
             "parent_id": comment.parent_id,
+            "root_id": comment.root_id,
             "created_at": comment.created_at,
+            "updated_at": comment.updated_at,
             "username": username,
             "post_title": post_title,
-            "score": total_score
         }
 
     @staticmethod
@@ -249,7 +222,6 @@ class CommentService:
         
         # Get username
         user = db.query(User).filter(User.id == comment.user_id).first()
-        total_score = CommentService._get_total_score_for_comment(db, comment_id, comment.post_id)
         
         return {
             "id": comment.id,
@@ -257,9 +229,10 @@ class CommentService:
             "user_id": comment.user_id,
             "post_id": comment.post_id,
             "parent_id": comment.parent_id,
+            "root_id": comment.root_id,
             "created_at": comment.created_at,
+            "updated_at": comment.updated_at,
             "username": user.username,
-            "score": total_score
         }
 
     @staticmethod

@@ -210,10 +210,10 @@ test.describe.serial('Hacker News e2e flows', () => {
     state.posts.askId = postUrl.split('/post/')[1]?.split('?')[0];
     expect(state.posts.askId, 'ask post id').toBeTruthy();
 
-    const scoreLocator = page.locator('.subline .score');
-    const scoreBefore = await scoreLocator.textContent();
+    const pointsLocator = page.locator('.subline .points');
+    const pointsBefore = await pointsLocator.textContent();
     await page.locator('div.votearrow[title="upvote"]').first().click();
-    await expect(scoreLocator).not.toHaveText(scoreBefore || '');
+    await expect(pointsLocator).not.toHaveText(pointsBefore || '');
   });
 
   test('search: results, pagination, no results', async ({ page }) => {
@@ -223,9 +223,7 @@ test.describe.serial('Hacker News e2e flows', () => {
     await page.getByRole('link', { name: 'More' }).click();
     await page.waitForURL(/\/search\?q=.*&p=2/);
 
-    await page.goto(`/?sort=top`);
-    await expect(page.getByText(state.posts.askTitle)).toBeVisible();
-    await page.goto(`/?sort=best`);
+    await page.goto(`/?sort=past`);
     await expect(page.getByText(state.posts.askTitle)).toBeVisible();
 
     const noResultsQuery = `no-results-${state.suffix}`;

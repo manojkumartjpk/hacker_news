@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 import CommentItem from '../../../components/CommentItem';
 import { postsAPI, commentsAPI, authAPI } from '../../../lib/api';
@@ -26,6 +26,8 @@ const collectCommentIds = (commentList) => {
 export default function PostDetail() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const focusedCommentId = searchParams.get('id');
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentVotes, setCommentVotes] = useState({});
@@ -59,6 +61,14 @@ export default function PostDetail() {
       fetchComments();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!focusedCommentId) return;
+    const target = document.getElementById(`comment-${focusedCommentId}`);
+    if (target) {
+      target.scrollIntoView({ block: 'center' });
+    }
+  }, [comments, focusedCommentId]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -233,7 +243,7 @@ export default function PostDetail() {
             <td colSpan="2"></td>
             <td className="subtext">
                 <span className="subline">
-                  <span className="score" id={`score_${post.id}`}>{post.score} {pointsLabel(post.score)}</span> by{' '}
+                  <span className="points" id={`points_${post.id}`}>{post.points} {pointsLabel(post.points)}</span> by{' '}
                   <a href={`/user/${post.username}`} className="hnuser">
                     {post.username}
                   </a>{' '}
@@ -318,6 +328,7 @@ export default function PostDetail() {
                 onRefresh={fetchComments}
                 currentUser={currentUser}
                 commentVotes={commentVotes}
+                focusedCommentId={focusedCommentId}
               />
             ))}
           </tbody>

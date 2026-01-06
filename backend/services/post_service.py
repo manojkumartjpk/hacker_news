@@ -1,6 +1,7 @@
+from datetime import date, datetime, time, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
-from models import Post, User, Vote, Comment
+from models import Post, User, Comment
 from schemas import PostCreate, PostUpdate
 from fastapi import HTTPException
 from cache import redis_get, redis_setex, redis_incr
@@ -10,9 +11,17 @@ class PostService:
     FEED_CACHE_TTL_SECONDS = 300
 
     @staticmethod
-    def _feed_cache_key(sort: str, skip: int, limit: int, post_type: str | None, version: int) -> str:
+    def _feed_cache_key(
+        sort: str,
+        skip: int,
+        limit: int,
+        post_type: str | None,
+        day_key: str | None,
+        version: int
+    ) -> str:
         type_key = post_type or "all"
-        return f"feed:{sort}:{type_key}:v{version}:skip:{skip}:limit:{limit}"
+        day_value = day_key or "all"
+        return f"feed:{sort}:{type_key}:day:{day_value}:v{version}:skip:{skip}:limit:{limit}"
 
     @staticmethod
     def _get_feed_cache_version() -> int:
@@ -37,6 +46,13 @@ class PostService:
     @staticmethod
     def _serialize_datetime(value):
         return value.isoformat() if hasattr(value, "isoformat") else value
+
+    @staticmethod
+    def _rank_expression(db: Session):
+        if db.bind and db.bind.dialect.name == "sqlite":
+            return Post.points
+        age_hours = func.extract("epoch", func.now() - Post.created_at) / 3600.0
+        return (Post.points - 1) / func.power(age_hours + 2, 1.8)
 
     @staticmethod
     def create_post(db: Session, post: PostCreate, user_id: int) -> dict:
@@ -70,7 +86,7 @@ class PostService:
             "url": db_post.url,
             "text": db_post.text,
             "post_type": db_post.post_type,
-            "score": db_post.score,
+            "points": db_post.points,
             "comment_count": 0,
             "user_id": db_post.user_id,
             "created_at": PostService._serialize_datetime(db_post.created_at),
@@ -96,18 +112,13 @@ class PostService:
             raise HTTPException(status_code=404, detail="Post not found")
         
         post, username, comment_count = result
-        cached_score = redis_get(f"post:{post_id}:score")
-        score = int(cached_score) if cached_score is not None else post.score
-        if cached_score is None:
-            redis_setex(f"post:{post_id}:score", PostService.FEED_CACHE_TTL_SECONDS, str(post.score))
-
         return {
             "id": post.id,
             "title": post.title,
             "url": post.url,
             "text": post.text,
             "post_type": post.post_type,
-            "score": score,
+            "points": post.points,
             "comment_count": comment_count or 0,
             "user_id": post.user_id,
             "created_at": PostService._serialize_datetime(post.created_at),
@@ -120,15 +131,33 @@ class PostService:
         skip: int = 0,
         limit: int = 10,
         sort: str = "new",
+        day: date | None = None,
         post_type: str | None = None
     ) -> list[dict]:
+        sort_key = sort
+        day_filter = None
+        if sort_key == "past":
+            if day is None:
+                latest_query = db.query(func.max(Post.created_at))
+                if post_type:
+                    latest_query = latest_query.filter(Post.post_type == post_type)
+                latest_created_at = latest_query.scalar()
+                if latest_created_at is None:
+                    return []
+                day_filter = latest_created_at.date()
+            else:
+                day_filter = day
+        day_key = day_filter.isoformat() if day_filter else None
         cache_version = PostService._get_feed_cache_version()
-        cache_key = PostService._feed_cache_key(sort, skip, limit, post_type, cache_version)
+        cache_key = PostService._feed_cache_key(sort_key, skip, limit, post_type, day_key, cache_version)
         cached = redis_get(cache_key)
         if cached:
             try:
-                return json.loads(cached)
-            except json.JSONDecodeError:
+                cached_posts = json.loads(cached)
+                if cached_posts and "points" not in cached_posts[0]:
+                    raise ValueError("stale-cache")
+                return cached_posts
+            except (json.JSONDecodeError, ValueError, TypeError):
                 pass
 
         comment_count_subq = db.query(
@@ -146,11 +175,13 @@ class PostService:
         )
         if post_type:
             query = query.filter(Post.post_type == post_type)
-        if sort == "top":
-            query = query.order_by(desc(Post.score), desc(Post.created_at))
-        elif sort == "best":
-            # Simple "best" ranking for demo purposes.
-            query = query.order_by(desc(Post.score), desc(Post.created_at))
+        if day_filter:
+            start = datetime.combine(day_filter, time.min, tzinfo=timezone.utc)
+            end = datetime.combine(day_filter, time.max, tzinfo=timezone.utc)
+            query = query.filter(Post.created_at.between(start, end))
+        if sort_key == "past":
+            rank_expr = PostService._rank_expression(db)
+            query = query.order_by(desc(rank_expr), desc(Post.created_at))
         else:  # "new"
             query = query.order_by(desc(Post.created_at))
 
@@ -158,21 +189,13 @@ class PostService:
 
         posts_with_username = []
         for post, username, comment_count in results:
-            cached_score = redis_get(f"post:{post.id}:score")
-            score = int(cached_score) if cached_score is not None else post.score
-            if cached_score is None:
-                redis_setex(
-                    f"post:{post.id}:score",
-                    PostService.FEED_CACHE_TTL_SECONDS,
-                    str(post.score)
-                )
             post_dict = {
                 "id": post.id,
                 "title": post.title,
                 "url": post.url,
                 "text": post.text,
                 "post_type": post.post_type,
-                "score": score,
+                "points": post.points,
                 "comment_count": comment_count or 0,
                 "user_id": post.user_id,
                 "created_at": PostService._serialize_datetime(post.created_at),
@@ -219,7 +242,7 @@ class PostService:
             "url": post.url,
             "text": post.text,
             "post_type": post.post_type,
-            "score": post.score,
+            "points": post.points,
             "comment_count": comment_count,
             "user_id": post.user_id,
             "created_at": PostService._serialize_datetime(post.created_at),
@@ -239,24 +262,16 @@ class PostService:
         PostService.bump_feed_cache_version()
 
     @staticmethod
-    def update_post_score(db: Session, post_id: int):
-        # Calculate score from votes
-        score = db.query(func.count(Vote.id)).filter(Vote.post_id == post_id).scalar()
-        score = int(score or 0)
-
-        # Update in database
-        post = db.query(Post).filter(Post.id == post_id).first()
-        if post:
-            post.score = score
+    def adjust_post_points(db: Session, post_id: int, delta: int) -> None:
+        if delta == 0:
+            return None
+        updated = db.query(Post).filter(Post.id == post_id).update(
+            {Post.points: Post.points + delta}
+        )
+        if updated:
             db.commit()
-
-            # Cache in Redis
-            redis_setex(f"post:{post_id}:score", PostService.FEED_CACHE_TTL_SECONDS, str(score))
-
-            # Score changes affect top/best feeds.
+            # Ranking depends on points, so invalidate cached feeds.
             PostService.bump_feed_cache_version()
-
-        return score
 
     @staticmethod
     def search_posts(db: Session, query: str, skip: int = 0, limit: int = 30) -> list[dict]:
@@ -285,21 +300,13 @@ class PostService:
         results = search_query.all()
         posts_with_username = []
         for post, username, comment_count in results:
-            cached_score = redis_get(f"post:{post.id}:score")
-            score = int(cached_score) if cached_score is not None else post.score
-            if cached_score is None:
-                redis_setex(
-                    f"post:{post.id}:score",
-                    PostService.FEED_CACHE_TTL_SECONDS,
-                    str(post.score)
-                )
             posts_with_username.append({
                 "id": post.id,
                 "title": post.title,
                 "url": post.url,
                 "text": post.text,
                 "post_type": post.post_type,
-                "score": score,
+                "points": post.points,
                 "comment_count": comment_count or 0,
                 "user_id": post.user_id,
                 "created_at": PostService._serialize_datetime(post.created_at),
@@ -307,10 +314,3 @@ class PostService:
             })
 
         return posts_with_username
-
-    @staticmethod
-    def get_cached_score(post_id: int) -> int:
-        cached_score = redis_get(f"post:{post_id}:score")
-        if cached_score is not None:
-            return int(cached_score)
-        return 0  # Default if not cached
