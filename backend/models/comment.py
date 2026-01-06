@@ -1,4 +1,4 @@
-from sqlalchemy import Text, Integer, DateTime, ForeignKey, func
+from sqlalchemy import Text, Integer, DateTime, ForeignKey, func, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
@@ -11,6 +11,7 @@ class Comment(Base):
     post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"))
     parent_id: Mapped[int] = mapped_column(ForeignKey("comments.id"), nullable=True)  # For threading
     root_id: Mapped[int] = mapped_column(ForeignKey("comments.id"), nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),

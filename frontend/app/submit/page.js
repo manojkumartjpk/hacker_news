@@ -62,67 +62,67 @@ export default function Submit() {
   }
 
   return (
-    <table border="0" cellPadding="0" cellSpacing="0">
+    <table border="0" cellPadding="0" cellSpacing="0" width="50%">
       <tbody>
         <tr>
-          <td className="title pb-2.5">Submit</td>
+          <td className="title pb-2.5 submit-title-cell">Submit</td>
         </tr>
         <tr>
           <td>
             <InlineError message={error} />
 
-            <form onSubmit={handleSubmit} className="hn-form">
-              <table border="0" cellPadding="0" cellSpacing="0" className="hn-form-table">
+            <form onSubmit={handleSubmit} className="hn-form submit-form">
+              <table border="0" cellPadding="0" cellSpacing="0" className="hn-form-table submit-table">
                 <tbody>
                   <tr>
-                    <td className="hn-form-label">Title:</td>
-                    <td>
+                    <td className="hn-form-label submit-label">Title:</td>
+                    <td className="submit-field">
                       <input
                         type="text"
                         name="title"
                         value={formData.title}
                         onChange={handleChange}
-                        className="w-full"
+                        className="submit-input"
                         required
                       />
                     </td>
                   </tr>
                   <tr>
-                    <td className="hn-form-label">URL:</td>
-                    <td>
+                    <td className="hn-form-label submit-label">URL:</td>
+                    <td className="submit-field">
                       <input
                         type="url"
                         name="url"
                         value={formData.url}
                         onChange={handleChange}
                         placeholder="https://example.com"
-                        className="w-full"
+                        className="submit-input"
                       />
-                      <div className="text-[8pt] text-[#828282] mt-0.5">
+                      <div className="submit-helper">
                         Leave blank to submit a text post
                       </div>
                     </td>
                   </tr>
                   <tr>
-                    <td className="hn-form-label">Text:</td>
-                    <td>
+                    <td className="hn-form-label submit-label">Text:</td>
+                    <td className="submit-field">
                       <textarea
                         name="text"
                         value={formData.text}
                         onChange={handleChange}
-                        className="comment-box"
+                        className="comment-box submit-textarea"
                         placeholder="Text (optional if URL is provided)"
                       />
                     </td>
                   </tr>
                   <tr>
-                    <td className="hn-form-label">Type:</td>
-                    <td>
+                    <td className="hn-form-label submit-label">Type:</td>
+                    <td className="submit-field">
                       <select
                         name="post_type"
                         value={formData.post_type}
                         onChange={handleChange}
-                        className="w-[200px]"
+                        className="submit-select"
                       >
                         <option value="story">story</option>
                         <option value="ask">ask</option>
@@ -133,11 +133,11 @@ export default function Submit() {
                   </tr>
                   <tr>
                     <td></td>
-                    <td>
+                    <td className="submit-field">
                       <button
                         type="submit"
                         disabled={loading}
-                        className="mt-2.5"
+                        className="comment-submit submit-button"
                       >
                         {loading ? 'Submitting...' : 'Submit'}
                       </button>

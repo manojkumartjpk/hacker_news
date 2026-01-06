@@ -149,7 +149,7 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
   const selectedDayIso = selectedDay ? toISODate(selectedDay) : null;
   const pastHeader = sort === 'past' && selectedDay ? (
     <div className="hn-past-header">
-      <div>Stories from {formatUtcDate(selectedDay)} (UTC)</div>
+      <div className="text-hn-gray">Stories from {formatUtcDate(selectedDay)} (UTC)</div>
       <div className="hn-past-nav">
         Go back a{' '}
         <a href={`${pathname}?sort=past&day=${toISODate(addUtcDays(selectedDay, -1))}`}>day</a>,{' '}

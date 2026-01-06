@@ -6,14 +6,18 @@ import { postsAPI } from '../lib/api';
 import { safeHostname, timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
 
-export default function PostItem({ post, onVote }) {
-  const [userVote, setUserVote] = useState(0);
+export default function PostItem({ post, onVote, userVote: userVoteProp = null }) {
+  const [userVote, setUserVote] = useState(userVoteProp ?? 0);
   const [points, setPoints] = useState(post.points);
   const hostname = safeHostname(post.url);
 
   useEffect(() => {
+    if (userVoteProp !== null && userVoteProp !== undefined) {
+      setUserVote(userVoteProp);
+      return;
+    }
     fetchUserVote();
-  }, [post.id]);
+  }, [post.id, userVoteProp]);
 
   const fetchUserVote = async () => {
     try {

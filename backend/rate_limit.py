@@ -6,7 +6,7 @@ from cache import redis_get, redis_incr, redis_expire
 def rate_limit():
     """Rate limiting dependency using Redis."""
     limit_user = 120
-    limit_ip = 20
+    limit_ip = 200
     window = 60
     def dependency(
         request: Request,

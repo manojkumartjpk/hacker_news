@@ -8,7 +8,7 @@ import { timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
 
 const MAX_NESTING = 5; // Prevent runaway nesting in deep reply threads.
-const BASE_INDENT = 16;
+const INDENT_WIDTH = 40;
 
 export default function CommentItem({
   comment,
@@ -26,6 +26,8 @@ export default function CommentItem({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
   const isFocused = Number(focusedCommentId) === Number(comment.id);
+  const isDeleted = !!comment.is_deleted;
+  const displayText = isDeleted ? 'comment has been deleted' : comment.text;
   const hasParent = comment.parent_id !== null && comment.parent_id !== undefined;
   const rootId = comment.root_id ?? null;
   const prevId = comment.prev_id ?? null;
@@ -72,104 +74,119 @@ export default function CommentItem({
 
   return (
     <>
-      <tr className={`comtr${isFocused ? ' focused' : ''}`} id={`comment-${comment.id}`}>
-        <td className="default" style={{ paddingLeft: `${BASE_INDENT + depth * 40}px` }}>
-          <div className="comment-head">
-            <div className="comment-votelinks">
-              {userVote === 1 ? (
-                <div className="votearrow invisible"></div>
-              ) : (
-                <a
-                  href="#"
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    if (!isLoggedIn) {
-                      // Preserve context so the user returns to the same comment after login.
-                      router.replace(`/login?next=/post/${comment.post_id}&vote=1&comment=${comment.id}`);
-                      return;
-                    }
-                    try {
-                      await commentsAPI.vote(comment.id, { vote_type: 1 });
-                      setUserVote(1);
-                      if (onRefresh) {
-                        onRefresh();
-                      }
-                    } catch (error) {
-                      alert(getErrorMessage(error, 'Failed to vote. Please try again.'));
-                    }
-                  }}
-                >
-                  <div className="votearrow" title="upvote"></div>
-                </a>
-              )}
-            </div>
-            <span className="comhead">
-              <a href={`/user/${comment.username}`} className="hnuser">
-                {comment.username}
-              </a>
-              {' '}
-              <span className="age" title={new Date(comment.created_at).toISOString()}>
-                <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
-              </span>
-              {' '}
-              <span className="navs">
-                {isLoggedIn && userVote !== 0 && (
-                  <>
-                    <a
-                      href="#"
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        try {
-                          await commentsAPI.unvote(comment.id);
-                          setUserVote(0);
-                          if (onRefresh) {
-                            onRefresh();
+      <tr className={`athing comtr${isFocused ? ' focused' : ''}`} id={`comment-${comment.id}`}>
+        <td>
+          <table border="0" cellPadding="0" cellSpacing="0">
+            <tbody>
+              <tr>
+                <td className="ind" data-indent={depth}>
+                  <img
+                    src="https://news.ycombinator.com/s.gif"
+                    height="1"
+                    width={depth * INDENT_WIDTH}
+                    alt=""
+                  />
+                </td>
+                <td className="votelinks" valign="top">
+                  <center>
+                    {userVote === 1 || isDeleted ? (
+                      <div className="votearrow invisible"></div>
+                    ) : (
+                      <a
+                        href="#"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          if (!isLoggedIn) {
+                            // Preserve context so the user returns to the same comment after login.
+                            router.replace(`/login?next=/post/${comment.post_id}&vote=1&comment=${comment.id}`);
+                            return;
                           }
-                        } catch (error) {
-                          alert(getErrorMessage(error, 'Failed to remove vote. Please try again.'));
-                        }
-                      }}
-                    >
-                      unvote
-                    </a>
-                  </>
-                )}
-                {hasParent && (
-                  <>
-                    {' | '}
-                    <a href={`#comment-${comment.parent_id}`}>parent</a>
-                  </>
-                )}
-                {rootId && rootId !== comment.id && (
-                  <>
-                    {' | '}
-                    <a href={`#comment-${rootId}`}>root</a>
-                  </>
-                )}
-                {prevId && (
-                  <>
-                    {' | '}
-                    <a href={`#comment-${prevId}`}>prev</a>
-                  </>
-                )}
-                {nextId && (
-                  <>
-                    {' | '}
-                    <a href={`#comment-${nextId}`}>next</a>
-                  </>
-                )}
-                {' '}
-                <button
-                  type="button"
-                  className="comment-toggle"
-                  aria-expanded={!isCollapsed}
-                  onClick={() => setIsCollapsed((prev) => !prev)}
-                >
-                  [{isCollapsed ? '+' : '–'}]
-                </button>
-              </span>
-            </span>
-          </div>
+                          try {
+                            await commentsAPI.vote(comment.id, { vote_type: 1 });
+                            setUserVote(1);
+                            if (onRefresh) {
+                              onRefresh();
+                            }
+                          } catch (error) {
+                            alert(getErrorMessage(error, 'Failed to vote. Please try again.'));
+                          }
+                        }}
+                      >
+                        <div className="votearrow" title="upvote"></div>
+                      </a>
+                    )}
+                  </center>
+                </td>
+                <td className="default">
+                  <div className="comment-headline">
+                    <span className="comhead">
+                      <a href={`/user/${comment.username}`} className="hnuser">
+                        {comment.username}
+                      </a>
+                      {' '}
+                      <span className="age" title={new Date(comment.created_at).toISOString()}>
+                        <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
+                      </span>
+                      {' '}
+                      <span className="navs">
+                        {isLoggedIn && userVote !== 0 && !isDeleted && (
+                          <>
+                            <a
+                              href="#"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                try {
+                                  await commentsAPI.unvote(comment.id);
+                                  setUserVote(0);
+                                  if (onRefresh) {
+                                    onRefresh();
+                                  }
+                                } catch (error) {
+                                  alert(getErrorMessage(error, 'Failed to remove vote. Please try again.'));
+                                }
+                              }}
+                            >
+                              unvote
+                            </a>
+                          </>
+                        )}
+                        {hasParent && (
+                          <>
+                            {' | '}
+                            <a href={`#comment-${comment.parent_id}`}>parent</a>
+                          </>
+                        )}
+                        {rootId && rootId !== comment.id && (
+                          <>
+                            {' | '}
+                            <a href={`#comment-${rootId}`}>root</a>
+                          </>
+                        )}
+                        {prevId && (
+                          <>
+                            {' | '}
+                            <a href={`#comment-${prevId}`}>prev</a>
+                          </>
+                        )}
+                        {nextId && (
+                          <>
+                            {' | '}
+                            <a href={`#comment-${nextId}`}>next</a>
+                          </>
+                        )}
+                        {' '}
+                        <button
+                          type="button"
+                          className="comment-toggle"
+                          aria-expanded={!isCollapsed}
+                          onClick={() => setIsCollapsed((prev) => !prev)}
+                        >
+                          [{isCollapsed ? '+' : '–'}]
+                        </button>
+                      </span>
+                    </span>
+                  </div>
+                  <br />
           {isEditing ? (
             <div className="comment-edit">
               <div className="hn-form-label reply-label">Text:</div>
@@ -196,7 +213,7 @@ export default function CommentItem({
           ) : !isCollapsed ? (
             <>
               <div className="comment">
-                {comment.text}
+                {displayText}
               </div>
               <div className="comment-actions">
                 {isLoggedIn && depth < MAX_NESTING ? (
@@ -204,7 +221,7 @@ export default function CommentItem({
                 ) : !isLoggedIn ? (
                   <a href={`/login?next=/reply/${comment.id}`}>reply</a>
                 ) : null}
-                {currentUser?.id === comment.user_id && (
+                {currentUser?.id === comment.user_id && !isDeleted && (
                   <>
                     {' | '}
                     <a
@@ -243,6 +260,10 @@ export default function CommentItem({
               </div>
             </div>
           )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </td>
       </tr>
 

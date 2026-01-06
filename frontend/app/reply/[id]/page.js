@@ -73,6 +73,8 @@ export default function ReplyPage() {
     return <div className="hn-loading">Comment not found</div>;
   }
 
+  const displayText = comment.is_deleted ? 'comment has been deleted' : comment.text;
+
   return (
     <>
       <table border="0" cellPadding="0" cellSpacing="0">
@@ -102,7 +104,7 @@ export default function ReplyPage() {
                 | <a href={`/post/${comment.post_id}?id=${comment.id}`}>context</a>{' '}
                 | on: <a href={`/post/${comment.post_id}`}>{comment.post_title}</a>
               </span>
-              <div className="comment">{comment.text}</div>
+              <div className="comment">{displayText}</div>
             </td>
           </tr>
           <tr className="spacer h-[6px]"></tr>

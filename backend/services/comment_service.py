@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from models import Comment, Notification, NotificationType, User, Post
+from models import Comment, NotificationType, User, Post
 from schemas import CommentCreate, CommentUpdate
 from services.post_service import PostService
 from fastapi import HTTPException
@@ -17,6 +17,7 @@ class CommentService:
                 "post_id": comment.post_id,
                 "parent_id": comment.parent_id,
                 "root_id": comment.root_id,
+                "is_deleted": comment.is_deleted,
                 "prev_id": None,
                 "next_id": None,
                 "created_at": comment.created_at,
@@ -123,6 +124,7 @@ class CommentService:
             "post_id": db_comment.post_id,
             "parent_id": db_comment.parent_id,
             "root_id": db_comment.root_id,
+            "is_deleted": db_comment.is_deleted,
             "created_at": db_comment.created_at,
             "updated_at": db_comment.updated_at,
             "username": user.username,
@@ -171,6 +173,7 @@ class CommentService:
                 "post_id": comment.post_id,
                 "parent_id": comment.parent_id,
                 "root_id": comment.root_id,
+                "is_deleted": comment.is_deleted,
                 "created_at": comment.created_at,
                 "updated_at": comment.updated_at,
                 "username": username,
@@ -204,6 +207,7 @@ class CommentService:
             "post_id": comment.post_id,
             "parent_id": comment.parent_id,
             "root_id": comment.root_id,
+            "is_deleted": comment.is_deleted,
             "created_at": comment.created_at,
             "updated_at": comment.updated_at,
             "username": username,
@@ -230,6 +234,7 @@ class CommentService:
             "post_id": comment.post_id,
             "parent_id": comment.parent_id,
             "root_id": comment.root_id,
+            "is_deleted": comment.is_deleted,
             "created_at": comment.created_at,
             "updated_at": comment.updated_at,
             "username": user.username,
@@ -241,20 +246,8 @@ class CommentService:
         if comment.user_id != user_id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
 
-        # Remove notifications tied to this comment tree to satisfy FK constraints.
-        comment_ids = {comment.id}
-        frontier = [comment.id]
-        while frontier:
-            child_ids = db.query(Comment.id).filter(Comment.parent_id.in_(frontier)).all()
-            frontier = [row[0] for row in child_ids if row[0] not in comment_ids]
-            comment_ids.update(frontier)
-
-        if comment_ids:
-            db.query(Notification).filter(Notification.comment_id.in_(comment_ids)).delete(
-                synchronize_session=False
-            )
-
-        db.delete(comment)
+        comment.is_deleted = True
+        comment.text = "[deleted]"
         db.commit()
         PostService.bump_feed_cache_version()
 

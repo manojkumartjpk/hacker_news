@@ -67,6 +67,16 @@ export default function CommentsPageClient() {
     }
   };
 
+  const handleUnvote = async (commentId) => {
+    try {
+      setError('');
+      await commentsAPI.unvote(commentId);
+      setCommentVotes((prev) => ({ ...prev, [commentId]: 0 }));
+    } catch (voteError) {
+      setError(getErrorMessage(voteError, 'Failed to remove vote. Please try again.'));
+    }
+  };
+
   if (loading) {
     return <div className="hn-loading">Loading...</div>;
   }
@@ -85,11 +95,14 @@ export default function CommentsPageClient() {
       <tbody>
         {comments.map((comment) => (
           <React.Fragment key={comment.id}>
+            {(() => {
+              const isDeleted = !!comment.is_deleted;
+              const displayText = isDeleted ? 'comment has been deleted' : comment.text;
+              return (
             <tr className="athing">
-              <td className="ind"></td>
-              <td className="votelinks align-top">
+              <td className="votelinks align-top comment-vote-cell">
                 <center>
-                  {commentVotes[comment.id] === 1 ? (
+                  {commentVotes[comment.id] === 1 || isDeleted ? (
                     <div className="votearrow invisible"></div>
                   ) : (
                     <a
@@ -124,6 +137,21 @@ export default function CommentsPageClient() {
                       <a href={`/post/${comment.post_id}?id=${comment.id}`}>{timeAgo(comment.created_at)}</a>
                     </span>
                     <span className="navs">
+                      {isLoggedIn && commentVotes[comment.id] === 1 && !isDeleted && (
+                        <>
+                          {' '}
+                          |{' '}
+                          <a
+                            href="#"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              handleUnvote(comment.id);
+                            }}
+                          >
+                            unvote
+                          </a>
+                        </>
+                      )}
                       {comment.parent_id && (
                         <>
                           {' '}
@@ -140,16 +168,18 @@ export default function CommentsPageClient() {
                   </span>
                 </div>
                 <div className="comment">
-                  {comment.text}
+                  {displayText}
                 </div>
               </td>
             </tr>
+              );
+            })()}
             <tr className="spacer h-[15px]"></tr>
           </React.Fragment>
         ))}
         <tr className="spacer h-[10px]"></tr>
         <tr>
-          <td colSpan="2"></td>
+          <td></td>
           <td className="title">
             <a href={`/comments?p=${page + 1}`} className="morelink" rel="next">More</a>
           </td>

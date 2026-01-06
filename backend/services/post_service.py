@@ -283,7 +283,6 @@ class PostService:
             func.count(Comment.id).label("comment_count")
         ).group_by(Comment.post_id).subquery()
 
-        like_term = f"%{query}%"
         search_query = db.query(
             Post,
             User.username,
@@ -291,11 +290,24 @@ class PostService:
         ).join(User).outerjoin(
             comment_count_subq,
             comment_count_subq.c.post_id == Post.id
-        ).filter(
-            (Post.title.ilike(like_term)) |
-            (Post.url.ilike(like_term)) |
-            (Post.text.ilike(like_term))
-        ).order_by(desc(Post.created_at)).offset(skip).limit(limit)
+        )
+
+        if db.bind and db.bind.dialect.name == "sqlite":
+            like_term = f"%{query}%"
+            search_query = search_query.filter(
+                (Post.title.ilike(like_term)) |
+                (Post.url.ilike(like_term)) |
+                (Post.text.ilike(like_term))
+            )
+        else:
+            search_vector = func.to_tsvector(
+                "english",
+                func.concat_ws(" ", Post.title, Post.text, Post.url)
+            )
+            ts_query = func.plainto_tsquery("english", query)
+            search_query = search_query.filter(search_vector.op("@@")(ts_query))
+
+        search_query = search_query.order_by(desc(Post.created_at)).offset(skip).limit(limit)
 
         results = search_query.all()
         posts_with_username = []

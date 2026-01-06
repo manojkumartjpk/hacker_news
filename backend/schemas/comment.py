@@ -35,6 +35,7 @@ class Comment(CommentBase):
     root_id: Optional[int] = None
     prev_id: Optional[int] = None
     next_id: Optional[int] = None
+    is_deleted: bool = False
     created_at: datetime
     updated_at: datetime
     username: str  # Add username field
@@ -57,6 +58,7 @@ class CommentFeedItem(BaseModel):
     root_id: Optional[int] = None
     prev_id: Optional[int] = None
     next_id: Optional[int] = None
+    is_deleted: bool = False
     created_at: datetime
     updated_at: datetime
     username: str

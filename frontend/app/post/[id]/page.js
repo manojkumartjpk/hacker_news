@@ -157,6 +157,10 @@ export default function PostDetail() {
     }
   };
 
+  const redirectToLogin = () => {
+    router.replace(`/login?next=/post/${id}`);
+  };
+
   const handleVote = async (voteType) => {
     try {
       await postsAPI.vote(id, { vote_type: voteType });
@@ -193,13 +197,10 @@ export default function PostDetail() {
 
   return (
     <>
-      <table border="0" cellPadding="0" cellSpacing="0">
+      <table border="0" cellPadding="0" cellSpacing="0" className="fatitem">
         <tbody>
           <tr className="athing submission">
-            <td className="title align-top text-right">
-              <span className="rank"></span>
-            </td>
-            <td className="votelinks align-top">
+            <td className="votelinks" valign="top">
               <center>
                 {userVote === 1 ? (
                   <div className="votearrow invisible"></div>
@@ -240,77 +241,71 @@ export default function PostDetail() {
             </td>
           </tr>
           <tr>
-            <td colSpan="2"></td>
+            <td colSpan="1"></td>
             <td className="subtext">
-                <span className="subline">
-                  <span className="points" id={`points_${post.id}`}>{post.points} {pointsLabel(post.points)}</span> by{' '}
-                  <a href={`/user/${post.username}`} className="hnuser">
-                    {post.username}
-                  </a>{' '}
-                  <span className="age" title={new Date(post.created_at).toISOString()}>
-                    {timeAgo(post.created_at)}
-                  </span>{' '}
-                  {isLoggedIn && userVote === 1 && (
-                    <>
-                      |{' '}
-                      <a
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleUnvote();
-                        }}
-                      >
-                        unvote
-                      </a>{' '}
-                    </>
-                  )}
-                  |{' '}
-                  <a href={`/post/${post.id}`}>discuss</a>
-                </span>
-              </td>
-            </tr>
-            <tr className="spacer h-[5px]"></tr>
-          </tbody>
-      </table>
-
-      <br />
-
-      <InlineError message={commentsError} />
-
-      <table border="0" cellPadding="0" cellSpacing="0">
-        <tbody>
-          <tr className="comment-form-row">
-            <td className="title align-top text-right">
-              <span className="rank">&nbsp;</span>
+              <span className="subline">
+                <span className="points" id={`points_${post.id}`}>{post.points} {pointsLabel(post.points)}</span> by{' '}
+                <a href={`/user/${post.username}`} className="hnuser">
+                  {post.username}
+                </a>{' '}
+                <span className="age" title={new Date(post.created_at).toISOString()}>
+                  {timeAgo(post.created_at)}
+                </span>{' '}
+                {isLoggedIn && userVote === 1 && (
+                  <>
+                    |{' '}
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleUnvote();
+                      }}
+                    >
+                      unvote
+                    </a>{' '}
+                  </>
+                )}
+                |{' '}
+                <a href={`/post/${post.id}`}>discuss</a>
+              </span>
             </td>
-            <td className="votelinks align-top">
-              <center>
-                <div className="votearrow invisible"></div>
-              </center>
-            </td>
+          </tr>
+          <tr>
+            <td colSpan="1"></td>
             <td>
-              {isLoggedIn ? (
-                <>
-                  <textarea
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    className="comment-box"
-                    placeholder=""
-                  />
-                  <br />
-                  <button
-                    onClick={handleCommentSubmit}
-                    disabled={submittingComment}
-                    className="comment-submit"
-                  >
-                    {submittingComment ? 'Posting...' : 'add comment'}
-                  </button>
-                </>
-              ) : (
-                <div className="subtext">
-                  <a href={`/login?next=/post/${id}`}>Login</a> to add a comment.
-                </div>
-              )}
+              <div className="toptext"></div>
+            </td>
+          </tr>
+          <tr className="spacer h-[6px]"></tr>
+          <tr>
+            <td colSpan="1"></td>
+            <td>
+              <form onSubmit={handleCommentSubmit}>
+                <textarea
+                  value={commentText}
+                  onChange={isLoggedIn ? (e) => setCommentText(e.target.value) : undefined}
+                  onFocus={!isLoggedIn ? redirectToLogin : undefined}
+                  onClick={!isLoggedIn ? redirectToLogin : undefined}
+                  onKeyDown={!isLoggedIn ? (e) => {
+                    e.preventDefault();
+                    redirectToLogin();
+                  } : undefined}
+                  readOnly={!isLoggedIn}
+                  className="comment-box"
+                  rows={8}
+                  cols={80}
+                  wrap="virtual"
+                  placeholder=""
+                />
+                <br />
+                <br />
+                <input
+                  type="submit"
+                  value={submittingComment ? 'Posting...' : 'add comment'}
+                  disabled={submittingComment}
+                  className="comment-submit"
+                />
+              </form>
             </td>
           </tr>
         </tbody>
@@ -318,8 +313,10 @@ export default function PostDetail() {
 
       <br />
 
+      <InlineError message={commentsError} />
+
       {comments.length > 0 && (
-        <table border="0" cellPadding="0" cellSpacing="0">
+        <table border="0" cellPadding="0" cellSpacing="0" className="comment-tree">
           <tbody>
             {comments.map((comment) => (
               <CommentItem

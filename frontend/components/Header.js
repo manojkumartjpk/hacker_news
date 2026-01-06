@@ -51,13 +51,11 @@ export default function Header() {
         <table border="0" cellPadding="0" cellSpacing="0" width="100%" className="w-full">
           <tbody>
             <tr>
-              <td className="w-[18px] pr-1">
+              <td className="w-[18px] pr-[4px]">
                 <a href="/">
                   <img
                     src="https://news.ycombinator.com/y18.svg"
-                    width="18"
-                    height="18"
-                    className="border border-white block"
+                    className="border border-white block h-[20px] w-[20px] max-w-none"
                     alt="Hacker News"
                   />
                 </a>
