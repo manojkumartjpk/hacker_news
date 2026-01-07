@@ -287,6 +287,7 @@ export default function FeedList({ defaultSort = 'new', postType = null }) {
             <td colSpan="2"></td>
             <td className="title">
               <a
+                className="morelink"
                 href={`${pathname}?p=${page + 1}${sort !== defaultSort ? `&sort=${sort}` : ''}${
                   sort === 'past' && selectedDayIso ? `&day=${encodeURIComponent(selectedDayIso)}` : ''
                 }`}

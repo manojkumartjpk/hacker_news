@@ -7,7 +7,6 @@ import { commentsAPI } from '../lib/api';
 import { timeAgo } from '../lib/format';
 import { getErrorMessage } from '../lib/errors';
 
-const MAX_NESTING = 5; // Prevent runaway nesting in deep reply threads.
 const INDENT_WIDTH = 40;
 
 export default function CommentItem({
@@ -80,11 +79,10 @@ export default function CommentItem({
             <tbody>
               <tr>
                 <td className="ind" data-indent={depth}>
-                  <img
-                    src="https://news.ycombinator.com/s.gif"
-                    height="1"
-                    width={depth * INDENT_WIDTH}
-                    alt=""
+                  <span
+                    className="indent-spacer"
+                    style={{ width: depth * INDENT_WIDTH }}
+                    aria-hidden="true"
                   />
                 </td>
                 <td className="votelinks" valign="top">
@@ -186,7 +184,6 @@ export default function CommentItem({
                       </span>
                     </span>
                   </div>
-                  <br />
           {isEditing ? (
             <div className="comment-edit">
               <div className="hn-form-label reply-label">Text:</div>
@@ -216,7 +213,7 @@ export default function CommentItem({
                 {displayText}
               </div>
               <div className="comment-actions">
-                {isLoggedIn && depth < MAX_NESTING ? (
+                {isLoggedIn ? (
                   <a href={`/reply/${comment.id}`}>reply</a>
                 ) : !isLoggedIn ? (
                   <a href={`/login?next=/reply/${comment.id}`}>reply</a>
@@ -268,7 +265,7 @@ export default function CommentItem({
       </tr>
 
       {/* Recursive render for nested replies. */}
-      {!isCollapsed && comment.replies && depth < MAX_NESTING && comment.replies.map((reply) => (
+      {!isCollapsed && comment.replies && comment.replies.map((reply) => (
         <CommentItem
           key={reply.id}
           comment={reply}

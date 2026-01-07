@@ -11,3 +11,12 @@ class Availability(BaseModel):
 
 class UnreadCount(BaseModel):
     unread_count: int
+
+
+class QueuedWriteResponse(BaseModel):
+    status: str = "queued"
+    request_id: str
+
+
+class QueuedVoteResponse(QueuedWriteResponse):
+    vote_type: int

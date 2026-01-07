@@ -2,15 +2,21 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from models import Vote, Post
 from schemas import VoteCreate
-from services.post_service import PostService
+from services.queue_service import enqueue_write, queue_writes_enabled, WriteEventType
 from fastapi import HTTPException
 
 class VoteService:
     @staticmethod
-    def vote_on_post(db: Session, post_id: int, vote: VoteCreate, user_id: int) -> Vote:
+    def vote_on_post(db: Session, post_id: int, vote: VoteCreate, user_id: int) -> Vote | str:
         post = db.query(Post).filter(Post.id == post_id).first()
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
+
+        if queue_writes_enabled():
+            return enqueue_write(
+                WriteEventType.POST_VOTE_ADD,
+                {"user_id": user_id, "post_id": post_id},
+            )
 
         existing_vote = db.query(Vote).filter(
             Vote.user_id == user_id,
@@ -30,7 +36,6 @@ class VoteService:
             try:
                 db.commit()
                 db.refresh(db_vote)
-                PostService.bump_feed_cache_version()
                 vote_obj = db_vote
             except IntegrityError:
                 db.rollback()
@@ -50,10 +55,16 @@ class VoteService:
         ).order_by(Vote.created_at.desc()).first()
 
     @staticmethod
-    def remove_vote_on_post(db: Session, post_id: int, user_id: int) -> None:
+    def remove_vote_on_post(db: Session, post_id: int, user_id: int) -> None | str:
         post = db.query(Post).filter(Post.id == post_id).first()
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
+
+        if queue_writes_enabled():
+            return enqueue_write(
+                WriteEventType.POST_VOTE_REMOVE,
+                {"user_id": user_id, "post_id": post_id},
+            )
 
         existing_vote = db.query(Vote).filter(
             Vote.user_id == user_id,
@@ -65,7 +76,6 @@ class VoteService:
                 {Post.points: Post.points - 1}
             )
             db.commit()
-            PostService.bump_feed_cache_version()
 
     @staticmethod
     def get_user_votes_for_posts(db: Session, user_id: int, post_ids: list[int]) -> list[dict]:

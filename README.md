@@ -35,7 +35,7 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 ## Architecture
 
 - **PostgreSQL**: System of record for users, posts, comments, votes, notifications
-- **Redis**: Caching for feed data, vote scores, rate limiting
+- **Redis**: Caching for feed data, write queue (Redis Streams), rate limiting
 - **REST API**: Clean separation between routers, services, models, and schemas
 
 ## CI/CD
@@ -44,7 +44,7 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 
 ## Caching and Rate Limiting
 
-- **Feed cache**: Redis caches feed responses for 5 minutes (TTL). Cache is invalidated on new posts and new comments via a feed version bump.
+- **Feed cache**: Redis caches feed responses for 5 minutes (TTL). New posts bump the feed version immediately; a background worker bumps every minute to capture votes/comments.
 - **Rate limits**: Authenticated requests are limited to 120 requests/minute per user. Unauthenticated requests are limited to 200 requests/minute per IP. Limits apply to endpoints using the rate limit dependency.
 - **Logout revocation**: Token revocation is stored in Redis. If Redis is disabled or unavailable, logout will not invalidate existing tokens.
 
@@ -85,6 +85,7 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 - Backend (local dev): copy `backend/.env.example` to `backend/.env` and set `SECRET_KEY`.
 - Backend: `ENVIRONMENT` (defaults to `development`; set to `production` to enable secure auth cookies).
 - Backend: `COOKIE_SECURE` (optional; set to `true` to force secure cookies regardless of `ENVIRONMENT`).
+- Backend: `WRITE_QUEUE_MODE` (`redis` for queued writes, `sync` for direct DB writes).
 - Frontend: `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:8000`).
 
 ## Development

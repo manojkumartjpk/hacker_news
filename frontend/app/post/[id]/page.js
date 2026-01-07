@@ -316,20 +316,22 @@ export default function PostDetail() {
       <InlineError message={commentsError} />
 
       {comments.length > 0 && (
-        <table border="0" cellPadding="0" cellSpacing="0" className="comment-tree">
-          <tbody>
-            {comments.map((comment) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                onRefresh={fetchComments}
-                currentUser={currentUser}
-                commentVotes={commentVotes}
-                focusedCommentId={focusedCommentId}
-              />
-            ))}
-          </tbody>
-        </table>
+        <div className="comment-tree-wrap">
+          <table border="0" cellPadding="0" cellSpacing="0" className="comment-tree">
+            <tbody>
+              {comments.map((comment) => (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  onRefresh={fetchComments}
+                  currentUser={currentUser}
+                  commentVotes={commentVotes}
+                  focusedCommentId={focusedCommentId}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {comments.length === 0 && (

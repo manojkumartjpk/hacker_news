@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas import CommentUpdate, Comment, CommentFeedItem
+from schemas import CommentUpdate, Comment, CommentFeedItem, QueuedWriteResponse
 from services import CommentService
 from auth.deps import get_current_user
 from models import User
@@ -32,13 +32,19 @@ def update_comment(
     return CommentService.update_comment(db, comment_id, comment_update, current_user.id)
 
 
-@router.delete("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{comment_id}", response_model=QueuedWriteResponse | None)
 def delete_comment(
     comment_id: int,
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit())
+    rate_limited: bool = Depends(rate_limit()),
 ):
     """Delete a comment owned by the authenticated user."""
-    CommentService.delete_comment(db, comment_id, current_user.id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    result = CommentService.delete_comment(db, comment_id, current_user.id)
+    response.status_code = (
+        status.HTTP_202_ACCEPTED
+        if isinstance(result, dict) and result.get("status") == "queued"
+        else status.HTTP_204_NO_CONTENT
+    )
+    return result

@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
-from schemas import CommentCreate, CommentWithUser, Comment
+from schemas import CommentCreate, CommentWithUser, Comment, QueuedWriteResponse
 from services import CommentService
 from auth.deps import get_current_user
 from models import User
@@ -10,16 +10,23 @@ from rate_limit import rate_limit
 
 router = APIRouter()
 
-@router.post("/{post_id}/comments", response_model=Comment)
+@router.post("/{post_id}/comments", response_model=Comment | QueuedWriteResponse)
 def create_comment(
     post_id: int,
     comment: CommentCreate,
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit())
+    rate_limited: bool = Depends(rate_limit()),
 ):
     """Create a comment on a post for the authenticated user."""
-    return CommentService.create_comment(db, comment, post_id, current_user.id)
+    result = CommentService.create_comment(db, comment, post_id, current_user.id)
+    response.status_code = (
+        status.HTTP_202_ACCEPTED
+        if isinstance(result, dict) and result.get("status") == "queued"
+        else status.HTTP_200_OK
+    )
+    return result
 
 @router.get("/{post_id}/comments", response_model=List[CommentWithUser])
 def get_comments_for_post(

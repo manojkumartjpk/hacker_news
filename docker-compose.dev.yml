@@ -22,6 +22,7 @@ services:
       - ./backend/.env
     environment:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://frontend:3000}
+      - WRITE_QUEUE_MODE=redis
     ports:
       - "8000:8000"
     depends_on:
@@ -30,6 +31,23 @@ services:
       redis:
         condition: service_healthy
     command: sh -c "alembic -c /app/alembic.ini upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./backend:/app
+
+  write_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      - WRITE_QUEUE_MODE=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "python workers/write_queue_worker.py"
     volumes:
       - ./backend:/app
 
@@ -53,6 +71,7 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
     volumes:
       - redis_data:/data
     healthcheck:

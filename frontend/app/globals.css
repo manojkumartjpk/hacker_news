@@ -422,12 +422,22 @@ textarea {
 
 .comment-tree .comment-headline {
   margin-top: 2px;
-  margin-bottom: -10px;
+  margin-bottom: 2px;
   line-height: 12pt;
 }
 
 .comment-tree td {
   vertical-align: top;
+}
+
+.comment-tree-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.comment-tree {
+  width: max-content;
+  min-width: 100%;
 }
 
 
@@ -453,6 +463,11 @@ textarea {
   color: #828282;
 }
 
+.morelink {
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
 .onstory {
   color: #828282;
 }
@@ -468,6 +483,11 @@ textarea {
 
 .ind img {
   max-width: none;
+}
+
+.indent-spacer {
+  display: inline-block;
+  height: 1px;
 }
 
 .comment-toggle {
@@ -494,6 +514,16 @@ textarea {
 .comment-form-row .votelinks {
   width: 14px;
   min-width: 14px;
+}
+
+.comment-form-row .comment-box {
+  margin-bottom: 6px;
+}
+
+.comment-form-row .comment-submit {
+  margin-top: 2px;
+  margin-bottom: 10px;
+  display: inline-block;
 }
 
 .hn-error {

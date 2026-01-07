@@ -124,6 +124,9 @@ export default function ReplyPage() {
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     className="comment-box"
+                    rows={8}
+                    cols={80}
+                    wrap="virtual"
                     placeholder=""
                   />
                   <br />

@@ -11,6 +11,7 @@ if str(ROOT_DIR) not in sys.path:
 
 os.environ.setdefault("POSTGRES_URL", "postgresql://user:password@postgres:5432/hackernews_test")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
+os.environ.setdefault("WRITE_QUEUE_MODE", "sync")
 
 from main import app  # noqa: E402
 from database import Base, engine, SessionLocal  # noqa: E402

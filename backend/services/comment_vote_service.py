@@ -2,15 +2,22 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from models import CommentVote, Comment
 from schemas import CommentVoteCreate
+from services.queue_service import enqueue_write, queue_writes_enabled, WriteEventType
 from fastapi import HTTPException
 
 
 class CommentVoteService:
     @staticmethod
-    def vote_on_comment(db: Session, comment_id: int, vote: CommentVoteCreate, user_id: int) -> CommentVote:
+    def vote_on_comment(db: Session, comment_id: int, vote: CommentVoteCreate, user_id: int) -> CommentVote | str:
         comment = db.query(Comment).filter(Comment.id == comment_id).first()
         if not comment:
             raise HTTPException(status_code=404, detail="Comment not found")
+
+        if queue_writes_enabled():
+            return enqueue_write(
+                WriteEventType.COMMENT_VOTE_ADD,
+                {"user_id": user_id, "comment_id": comment_id},
+            )
 
         existing_vote = db.query(CommentVote).filter(
             CommentVote.user_id == user_id,
@@ -47,10 +54,16 @@ class CommentVoteService:
         ).order_by(CommentVote.created_at.desc()).first()
 
     @staticmethod
-    def remove_vote_on_comment(db: Session, comment_id: int, user_id: int) -> None:
+    def remove_vote_on_comment(db: Session, comment_id: int, user_id: int) -> None | str:
         comment = db.query(Comment).filter(Comment.id == comment_id).first()
         if not comment:
             raise HTTPException(status_code=404, detail="Comment not found")
+
+        if queue_writes_enabled():
+            return enqueue_write(
+                WriteEventType.COMMENT_VOTE_REMOVE,
+                {"user_id": user_id, "comment_id": comment_id},
+            )
 
         existing_vote = db.query(CommentVote).filter(
             CommentVote.user_id == user_id,

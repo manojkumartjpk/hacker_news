@@ -1,12 +1,16 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from datetime import datetime, timezone
-from models import Comment, NotificationType, User, Post
+import json
+from models import Comment, NotificationType, User, Post, Notification
 from schemas import CommentCreate, CommentUpdate
-from services.post_service import PostService
+from cache import redis_get, redis_setex, redis_incr
+from services.queue_service import enqueue_write, queue_writes_enabled, WriteEventType
 from fastapi import HTTPException
 
 class CommentService:
+    COMMENTS_CACHE_TTL_SECONDS = 300
+
     @staticmethod
     def _reply_rank_score(comment: dict) -> float:
         created_at = comment.get("created_at")
@@ -93,6 +97,31 @@ class CommentService:
             comment["next_id"] = ordered[index + 1]["id"] if index + 1 < len(ordered) else None
 
     @staticmethod
+    def _serialize_datetime(value):
+        return value.isoformat() if hasattr(value, "isoformat") else value
+
+    @staticmethod
+    def _comments_cache_key(post_id: int, version: int) -> str:
+        return f"post:{post_id}:comments:v{version}"
+
+    @staticmethod
+    def _get_comments_cache_version(post_id: int) -> int:
+        cached = redis_get(f"post:{post_id}:comments:v")
+        if cached is None:
+            initial = redis_incr(f"post:{post_id}:comments:v")
+            if initial is None:
+                return 1
+            return int(initial)
+        try:
+            return int(cached)
+        except ValueError:
+            return 1
+
+    @staticmethod
+    def bump_comments_cache_version(post_id: int) -> None:
+        redis_incr(f"post:{post_id}:comments:v")
+
+    @staticmethod
     def create_comment(db: Session, comment: CommentCreate, post_id: int, user_id: int) -> dict:
         if not comment.text or not comment.text.strip():
             raise HTTPException(status_code=400, detail="Comment text is required")
@@ -109,6 +138,18 @@ class CommentService:
             if parent_comment.post_id != post_id:
                 raise HTTPException(status_code=400, detail="Parent comment does not belong to this post")
             root_id = parent_comment.root_id or parent_comment.id
+
+        if queue_writes_enabled():
+            request_id = enqueue_write(
+                WriteEventType.COMMENT_ADD,
+                {
+                    "user_id": user_id,
+                    "post_id": post_id,
+                    "parent_id": comment.parent_id,
+                    "text": comment.text,
+                },
+            )
+            return {"status": "queued", "request_id": request_id}
 
         db_comment = Comment(
             text=comment.text,
@@ -127,7 +168,7 @@ class CommentService:
 
         # Create notification
         CommentService._create_notification_for_comment(db, db_comment)
-        PostService.bump_feed_cache_version()
+        CommentService.bump_comments_cache_version(post_id)
 
         # Get username
         user = db.query(User).filter(User.id == user_id).first()
@@ -159,6 +200,15 @@ class CommentService:
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
 
+        cache_version = CommentService._get_comments_cache_version(post_id)
+        cache_key = CommentService._comments_cache_key(post_id, cache_version)
+        cached = redis_get(cache_key)
+        if cached:
+            try:
+                return json.loads(cached)
+            except (json.JSONDecodeError, TypeError):
+                pass
+
         results = db.query(
             Comment,
             User.username
@@ -168,7 +218,13 @@ class CommentService:
             Comment.post_id == post_id
         ).order_by(desc(Comment.created_at)).all()
 
-        return CommentService._build_thread(results)
+        thread = CommentService._build_thread(results)
+        redis_setex(
+            cache_key,
+            CommentService.COMMENTS_CACHE_TTL_SECONDS,
+            json.dumps(thread, default=CommentService._serialize_datetime),
+        )
+        return thread
 
     @staticmethod
     def get_recent_comments(db: Session, skip: int = 0, limit: int = 30) -> list[dict]:
@@ -243,6 +299,7 @@ class CommentService:
         comment.text = comment_update.text
         db.commit()
         db.refresh(comment)
+        CommentService.bump_comments_cache_version(comment.post_id)
         
         # Get username
         user = db.query(User).filter(User.id == comment.user_id).first()
@@ -267,10 +324,17 @@ class CommentService:
         if comment.user_id != user_id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
 
+        if queue_writes_enabled():
+            request_id = enqueue_write(
+                WriteEventType.COMMENT_DELETE,
+                {"user_id": user_id, "comment_id": comment_id, "post_id": comment.post_id},
+            )
+            return {"status": "queued", "request_id": request_id}
+
         comment.is_deleted = True
         comment.text = "[deleted]"
         db.commit()
-        PostService.bump_feed_cache_version()
+        CommentService.bump_comments_cache_version(comment.post_id)
 
     @staticmethod
     def _create_notification_for_comment(db: Session, comment: Comment):

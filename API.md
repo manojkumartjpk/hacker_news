@@ -205,21 +205,11 @@ Request body:
 }
 ```
 
-Response:
+Response (202, queued):
 ```json
 {
-  "id": 1,
-  "text": "string",
-  "user_id": 1,
-  "post_id": 1,
-  "parent_id": "integer | null",
-  "root_id": "integer | null",
-  "prev_id": "integer | null",
-  "next_id": "integer | null",
-  "is_deleted": false,
-  "created_at": "string",
-  "updated_at": "string",
-  "username": "string"
+  "status": "queued",
+  "request_id": "uuid"
 }
 ```
 
@@ -302,7 +292,13 @@ Response:
 
 Auth: required
 
-Response: `204 No Content`
+Response (202, queued):
+```json
+{
+  "status": "queued",
+  "request_id": "uuid"
+}
+```
 
 Deleted comments remain in thread responses with `is_deleted: true` and `text: "[deleted]"`.
 
@@ -346,9 +342,11 @@ Request body:
 }
 ```
 
-Response:
+Response (202, queued):
 ```json
 {
+  "status": "queued",
+  "request_id": "uuid",
   "vote_type": 1
 }
 ```
@@ -389,9 +387,11 @@ Response:
 
 Auth: required
 
-Response:
+Response (202, queued):
 ```json
 {
+  "status": "queued",
+  "request_id": "uuid",
   "vote_type": 0
 }
 ```
@@ -407,9 +407,11 @@ Request body:
 }
 ```
 
-Response:
+Response (202, queued):
 ```json
 {
+  "status": "queued",
+  "request_id": "uuid",
   "vote_type": 1
 }
 ```
@@ -450,9 +452,11 @@ Response:
 
 Auth: required
 
-Response:
+Response (202, queued):
 ```json
 {
+  "status": "queued",
+  "request_id": "uuid",
   "vote_type": 0
 }
 ```
