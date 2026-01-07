@@ -73,13 +73,21 @@ export default function LoginPageClient() {
   };
 
   const fetchVote = async (postId, voteType) => {
+    const parsedVote = Number(voteType);
+    if (parsedVote !== 1) {
+      return;
+    }
     const { postsAPI } = await import('../lib/api');
-    await postsAPI.vote(postId, { vote_type: Number(voteType) });
+    await postsAPI.vote(postId, { vote_type: parsedVote });
   };
 
   const fetchCommentVote = async (commentId, voteType) => {
+    const parsedVote = Number(voteType);
+    if (parsedVote !== 1) {
+      return;
+    }
     const { commentsAPI } = await import('../lib/api');
-    await commentsAPI.vote(commentId, { vote_type: Number(voteType) });
+    await commentsAPI.vote(commentId, { vote_type: parsedVote });
   };
 
   return (

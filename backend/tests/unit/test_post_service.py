@@ -7,7 +7,7 @@ import services.post_service as post_service
 
 from auth import get_password_hash
 from models import User, Post
-from schemas import PostCreate, PostUpdate, VoteCreate
+from schemas import PostCreate, VoteCreate
 from services.post_service import PostService
 from services.vote_service import VoteService
 
@@ -22,21 +22,6 @@ def test_create_post_rejects_invalid_type(db_session):
     with pytest.raises(ValidationError):
         PostCreate(title="Bad", url="https://example.com", text=None, post_type="invalid")
 
-
-@pytest.mark.unit
-def test_update_post_rejects_invalid_type(db_session):
-    user = User(username="bob", email="bob@example.com", hashed_password=get_password_hash("Password1!"))
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-
-    post = Post(title="Original", url=None, text="Body", post_type="story", user_id=user.id)
-    db_session.add(post)
-    db_session.commit()
-    db_session.refresh(post)
-
-    with pytest.raises(ValidationError):
-        PostUpdate(post_type="invalid")
 
 
 @pytest.mark.unit
@@ -142,34 +127,6 @@ def test_bump_feed_cache_version_noop(monkeypatch):
     assert PostService.bump_feed_cache_version() is None
 
 
-@pytest.mark.unit
-def test_update_post_allows_null_post_type(db_session):
-    user = User(username="nulltype", email="nulltype@example.com", hashed_password=get_password_hash("Password1!"))
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-
-    post = Post(title="Original", url=None, text="Body", post_type="story", user_id=user.id)
-    db_session.add(post)
-    db_session.commit()
-    db_session.refresh(post)
-
-    updated = PostService.update_post(db_session, post.id, PostUpdate(post_type=None, title="Updated"), user.id)
-    assert updated["post_type"] == "story"
-    assert updated["title"] == "Updated"
-
-
-@pytest.mark.unit
-def test_update_post_missing(db_session):
-    with pytest.raises(HTTPException):
-        PostService.update_post(db_session, 999, PostUpdate(title="Nope"), 1)
-
-
-@pytest.mark.unit
-def test_delete_post_missing(db_session):
-    with pytest.raises(HTTPException):
-        PostService.delete_post(db_session, 999, 1)
-
 
 @pytest.mark.unit
 def test_adjust_post_points_updates(db_session):
@@ -187,18 +144,3 @@ def test_adjust_post_points_updates(db_session):
     db_session.refresh(post)
     assert post.points == 1
 
-
-@pytest.mark.unit
-def test_delete_post_removes(db_session):
-    user = User(username="emma", email="emma@example.com", hashed_password=get_password_hash("Password1!"))
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-
-    post = Post(title="Delete", url=None, text="Body", post_type="story", user_id=user.id)
-    db_session.add(post)
-    db_session.commit()
-    db_session.refresh(post)
-
-    PostService.delete_post(db_session, post.id, user.id)
-    assert db_session.query(Post).filter(Post.id == post.id).first() is None

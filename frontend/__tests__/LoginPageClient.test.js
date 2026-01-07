@@ -76,12 +76,12 @@ describe('LoginPageClient', () => {
   });
 
   it('executes comment vote after login when params are present', async () => {
-    searchParamsValue = 'next=/&vote=-1&comment=4';
+    searchParamsValue = 'next=/&vote=1&comment=4';
     render(<LoginPageClient />);
     await fillAndSubmit();
 
     await waitFor(() => {
-      expect(commentsAPI.vote).toHaveBeenCalledWith('4', { vote_type: -1 });
+      expect(commentsAPI.vote).toHaveBeenCalledWith('4', { vote_type: 1 });
     });
   });
 

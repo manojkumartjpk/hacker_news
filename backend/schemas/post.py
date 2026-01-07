@@ -27,17 +27,6 @@ class PostBase(BaseModel):
 class PostCreate(PostBase):
     post_type: Optional[str] = "story"
 
-class PostUpdate(BaseModel):
-    title: Optional[str] = None
-    url: Optional[str] = None
-    text: Optional[str] = None
-    post_type: Optional[str] = None
-
-    @field_validator("post_type")
-    @classmethod
-    def validate_post_type(cls, value: Optional[str]) -> Optional[str]:
-        return _validate_post_type(value)
-
 class Post(PostBase):
     id: int
     points: int

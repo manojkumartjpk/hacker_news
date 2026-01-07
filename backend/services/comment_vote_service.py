@@ -24,6 +24,9 @@ class CommentVoteService:
             comment_id=comment_id
         )
         db.add(db_vote)
+        db.query(Comment).filter(Comment.id == comment_id).update(
+            {Comment.points: Comment.points + 1}
+        )
         try:
             db.commit()
             db.refresh(db_vote)
@@ -55,6 +58,9 @@ class CommentVoteService:
         ).first()
         if existing_vote:
             db.delete(existing_vote)
+            db.query(Comment).filter(Comment.id == comment_id).update(
+                {Comment.points: Comment.points - 1}
+            )
             db.commit()
 
     @staticmethod

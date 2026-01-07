@@ -1,9 +1,9 @@
 from datetime import date
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
-from schemas import PostCreate, Post, PostUpdate
+from schemas import PostCreate, Post
 from services import PostService
 from auth.deps import get_current_user
 from models import User
@@ -54,25 +54,3 @@ def get_post(
 ):
     """Fetch a single post by ID."""
     return PostService.get_post(db, post_id)
-
-@router.put("/{post_id}", response_model=Post)
-def update_post(
-    post_id: int,
-    post_update: PostUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit())
-):
-    """Update a post owned by the authenticated user."""
-    return PostService.update_post(db, post_id, post_update, current_user.id)
-
-@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(
-    post_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    rate_limited: bool = Depends(rate_limit())
-):
-    """Delete a post owned by the authenticated user."""
-    PostService.delete_post(db, post_id, current_user.id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)

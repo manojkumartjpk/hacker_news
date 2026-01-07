@@ -113,7 +113,7 @@ Response:
   "url": "string | null",
   "text": "string | null",
   "post_type": "string",
-  "score": 0,
+  "points": 0,
   "comment_count": 0,
   "user_id": 1,
   "username": "string",
@@ -126,7 +126,8 @@ Response:
 Request params:
 - `skip`: integer (optional, default: 0)
 - `limit`: integer (optional, default: 10, max: 100)
-- `sort`: string (optional, default: `new`, options: `new`, `top`, `best`)
+- `sort`: string (optional, default: `new`, options: `new`, `past`)
+- `day`: date (optional, format: `YYYY-MM-DD`, used with `sort=past`)
 - `post_type`: string (optional, options: `story`, `ask`, `show`, `job`)
 
 Response:
@@ -138,7 +139,7 @@ Response:
     "url": "string | null",
     "text": "string | null",
     "post_type": "string",
-    "score": 0,
+    "points": 0,
     "comment_count": 0,
     "user_id": 1,
     "username": "string",
@@ -163,7 +164,7 @@ Response:
     "url": "string | null",
     "text": "string | null",
     "post_type": "string",
-    "score": 0,
+    "points": 0,
     "comment_count": 0,
     "user_id": 1,
     "username": "string",
@@ -182,49 +183,13 @@ Response:
   "url": "string | null",
   "text": "string | null",
   "post_type": "string",
-  "score": 0,
+  "points": 0,
   "comment_count": 0,
   "user_id": 1,
   "username": "string",
   "created_at": "string"
 }
 ```
-
-`PUT /posts/{post_id}`
-
-Auth: required
-
-Request body:
-```json
-{
-  "title": "string | null",
-  "url": "string | null",
-  "text": "string | null",
-  "post_type": "string | null"
-}
-```
-
-Response:
-```json
-{
-  "id": 1,
-  "title": "string",
-  "url": "string | null",
-  "text": "string | null",
-  "post_type": "string",
-  "score": 0,
-  "comment_count": 0,
-  "user_id": 1,
-  "username": "string",
-  "created_at": "string"
-}
-```
-
-`DELETE /posts/{post_id}`
-
-Auth: required
-
-Response: `204 No Content`
 
 ## Comments
 
@@ -248,15 +213,19 @@ Response:
   "user_id": 1,
   "post_id": 1,
   "parent_id": "integer | null",
+  "root_id": "integer | null",
+  "prev_id": "integer | null",
+  "next_id": "integer | null",
+  "is_deleted": false,
   "created_at": "string",
-  "username": "string",
-  "score": 0
+  "updated_at": "string",
+  "username": "string"
 }
 ```
 
 `GET /posts/{post_id}/comments`
 
-Comments are sorted by total score (the comment's votes plus all nested replies). Ties are broken by `created_at` descending.
+Comments are sorted by `created_at` descending (with nested replies also sorted by `created_at`).
 
 Response:
 ```json
@@ -267,9 +236,13 @@ Response:
     "user_id": 1,
     "post_id": 1,
     "parent_id": "integer | null",
+    "root_id": "integer | null",
+    "prev_id": "integer | null",
+    "next_id": "integer | null",
+    "is_deleted": false,
     "created_at": "string",
+    "updated_at": "string",
     "username": "string",
-    "score": 0,
     "replies": []
   }
 ]
@@ -285,10 +258,14 @@ Response:
   "user_id": 1,
   "post_id": 1,
   "parent_id": "integer | null",
+  "root_id": "integer | null",
+  "prev_id": "integer | null",
+  "next_id": "integer | null",
+  "is_deleted": false,
   "created_at": "string",
+  "updated_at": "string",
   "username": "string",
-  "post_title": "string",
-  "score": 0
+  "post_title": "string"
 }
 ```
 
@@ -311,9 +288,13 @@ Response:
   "user_id": 1,
   "post_id": 1,
   "parent_id": "integer | null",
+  "root_id": "integer | null",
+  "prev_id": "integer | null",
+  "next_id": "integer | null",
+  "is_deleted": false,
   "created_at": "string",
-  "username": "string",
-  "score": 0
+  "updated_at": "string",
+  "username": "string"
 }
 ```
 
@@ -322,6 +303,8 @@ Response:
 Auth: required
 
 Response: `204 No Content`
+
+Deleted comments remain in thread responses with `is_deleted: true` and `text: "[deleted]"`.
 
 `GET /comments/recent`
 
@@ -340,10 +323,12 @@ Response:
     "user_id": 1,
     "post_id": 1,
     "parent_id": "integer | null",
+    "root_id": "integer | null",
+    "is_deleted": false,
     "created_at": "string",
+    "updated_at": "string",
     "username": "string",
-    "post_title": "string",
-    "score": 0
+    "post_title": "string"
   }
 ]
 ```
@@ -364,11 +349,29 @@ Request body:
 Response:
 ```json
 {
-  "id": 1,
-  "user_id": 1,
-  "post_id": 1,
   "vote_type": 1
 }
+```
+
+`POST /posts/votes/bulk`
+
+Auth: required
+
+Request body:
+```json
+{
+  "post_ids": [1, 2, 3]
+}
+```
+
+Response:
+```json
+[
+  {
+    "post_id": 1,
+    "vote_type": 1
+  }
+]
 ```
 
 `GET /posts/{post_id}/vote`
@@ -407,12 +410,29 @@ Request body:
 Response:
 ```json
 {
-  "id": 1,
-  "user_id": 1,
-  "comment_id": 1,
-  "vote_type": 1,
-  "created_at": "string"
+  "vote_type": 1
 }
+```
+
+`POST /comments/votes/bulk`
+
+Auth: required
+
+Request body:
+```json
+{
+  "comment_ids": [1, 2, 3]
+}
+```
+
+Response:
+```json
+[
+  {
+    "comment_id": 1,
+    "vote_type": 1
+  }
+]
 ```
 
 `GET /comments/{comment_id}/vote`

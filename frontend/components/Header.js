@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
@@ -9,21 +9,29 @@ import { notificationsAPI, authAPI } from '../lib/api';
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const lastUnreadFetchRef = useRef(0);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const sortParam = searchParams.get('sort') || 'new';
   const sort = ['new', 'past'].includes(sortParam) ? sortParam : 'new';
+  const UNREAD_FETCH_TTL_MS = 5 * 60 * 1000;
 
   useEffect(() => {
     const authStatus = Cookies.get('auth_status');
     setIsLoggedIn(!!authStatus);
 
     if (authStatus) {
-      fetchUnreadCount();
+      maybeFetchUnreadCount();
     }
   }, [pathname]);
 
-  const fetchUnreadCount = async () => {
+  const maybeFetchUnreadCount = async () => {
+    const now = Date.now();
+    if (now - lastUnreadFetchRef.current < UNREAD_FETCH_TTL_MS) {
+      return;
+    }
+    lastUnreadFetchRef.current = now;
+
     try {
       const response = await notificationsAPI.getUnreadCount();
       setUnreadCount(response.data.unread_count);
@@ -52,36 +60,36 @@ export default function Header() {
           <tbody>
             <tr>
               <td className="w-[18px] pr-[4px]">
-                <a href="/">
+                <Link href="/">
                   <img
                     src="https://news.ycombinator.com/y18.svg"
                     className="border border-white block h-[20px] w-[20px] max-w-none"
                     alt="Hacker News"
                   />
-                </a>
+                </Link>
               </td>
               <td className="leading-[12pt] h-[10px]">
                 <span className="pagetop">
                   <b className="hnname">
-                    <a href="/">Hacker News</a>
+                    <Link href="/">Hacker News</Link>
                   </b>
-                  <a href="/" className={pathname === '/' && sort === 'new' ? 'topsel' : ''}>new</a> |{' '}
-                  <a href="/?sort=past" className={pathname === '/' && sort === 'past' ? 'topsel' : ''}>past</a> |{' '}
-                  <a href="/comments" className={pathname === '/comments' ? 'topsel' : ''}>comments</a> |{' '}
-                  <a href="/ask" className={pathname === '/ask' ? 'topsel' : ''}>ask</a> |{' '}
-                  <a href="/show" className={pathname === '/show' ? 'topsel' : ''}>show</a> |{' '}
-                  <a href="/jobs" className={pathname === '/jobs' ? 'topsel' : ''}>jobs</a> |{' '}
-                  <a href="/submit" className={pathname === '/submit' ? 'topsel' : ''}>submit</a>
+                  <Link href="/" className={pathname === '/' && sort === 'new' ? 'topsel' : ''}>new</Link> |{' '}
+                  <Link href="/?sort=past" className={pathname === '/' && sort === 'past' ? 'topsel' : ''}>past</Link> |{' '}
+                  <Link href="/comments" className={pathname === '/comments' ? 'topsel' : ''}>comments</Link> |{' '}
+                  <Link href="/ask" className={pathname === '/ask' ? 'topsel' : ''}>ask</Link> |{' '}
+                  <Link href="/show" className={pathname === '/show' ? 'topsel' : ''}>show</Link> |{' '}
+                  <Link href="/jobs" className={pathname === '/jobs' ? 'topsel' : ''}>jobs</Link> |{' '}
+                  <Link href="/submit" className={pathname === '/submit' ? 'topsel' : ''}>submit</Link>
                 </span>
               </td>
               <td className="hn-nav-right text-right pr-1 align-top">
                 <span className="pagetop">
                   {isLoggedIn ? (
                     <>
-                      <a href="/notifications">
+                      <Link href="/notifications">
                         {unreadCount > 0 && `(${unreadCount}) `}
                         notifications
-                      </a>
+                      </Link>
                       {' | '}
                       <a
                         href="#"

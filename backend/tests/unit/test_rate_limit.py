@@ -33,7 +33,7 @@ def test_rate_limit_tracks_ip(monkeypatch):
     monkeypatch.setattr(rate_limit, "redis_expire", redis_expire)
 
     dependency = rate_limit.rate_limit()
-    for _ in range(20):
+    for _ in range(200):
         dependency(_Request(), None)
     with pytest.raises(HTTPException):
         dependency(_Request(), None)

@@ -89,6 +89,8 @@ def test_comment_vote_service_updates_vote(db_session):
         user.id,
     )
     assert vote is not None
+    db_session.refresh(comment)
+    assert comment.points == 1
 
     same_vote = CommentVoteService.vote_on_comment(
         db_session,
@@ -97,3 +99,5 @@ def test_comment_vote_service_updates_vote(db_session):
         user.id,
     )
     assert same_vote.id == vote.id
+    db_session.refresh(comment)
+    assert comment.points == 1

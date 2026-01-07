@@ -219,4 +219,6 @@ def test_delete_comment_success(client, auth_headers):
     assert delete_response.status_code == 204
     thread_response = client.get(f"/posts/{post_id}/comments")
     assert thread_response.status_code == 200
-    assert all(comment["id"] != comment_id for comment in thread_response.json())
+    deleted_comment = next(comment for comment in thread_response.json() if comment["id"] == comment_id)
+    assert deleted_comment["is_deleted"] is True
+    assert deleted_comment["text"] == "[deleted]"

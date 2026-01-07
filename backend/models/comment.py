@@ -7,6 +7,7 @@ class Comment(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     text: Mapped[str] = mapped_column(Text)
+    points: Mapped[int] = mapped_column(Integer, default=0)  # Cached points from votes
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"))
     parent_id: Mapped[int] = mapped_column(ForeignKey("comments.id"), nullable=True)  # For threading

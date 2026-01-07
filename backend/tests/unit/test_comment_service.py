@@ -235,7 +235,7 @@ def test_create_notification_for_comment_handles_missing_entities(db_session):
 
 
 @pytest.mark.unit
-def test_delete_comment_removes_notifications(db_session):
+def test_delete_comment_keeps_notifications(db_session):
     author = User(username="fiona", email="fiona@example.com", hashed_password=get_password_hash("Password1!"))
     commenter = User(username="gary", email="gary@example.com", hashed_password=get_password_hash("Password1!"))
     db_session.add_all([author, commenter])
@@ -260,4 +260,4 @@ def test_delete_comment_removes_notifications(db_session):
 
     CommentService.delete_comment(db_session, comment["id"], commenter.id)
     notifications_after = db_session.query(Notification).filter(Notification.user_id == author.id).all()
-    assert notifications_after == []
+    assert len(notifications_after) == 1

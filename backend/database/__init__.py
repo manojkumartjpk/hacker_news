@@ -17,7 +17,7 @@ if POSTGRES_URL.startswith("sqlite"):
     if ":memory:" in POSTGRES_URL:
         engine_kwargs["poolclass"] = StaticPool
 
-engine = create_engine(POSTGRES_URL, connect_args=connect_args, **engine_kwargs)
+engine = create_engine(POSTGRES_URL, connect_args=connect_args, echo=True, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Import all models to ensure they are registered with SQLAlchemy

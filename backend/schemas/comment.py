@@ -36,6 +36,7 @@ class Comment(CommentBase):
     prev_id: Optional[int] = None
     next_id: Optional[int] = None
     is_deleted: bool = False
+    points: int = 0
     created_at: datetime
     updated_at: datetime
     username: str  # Add username field
@@ -59,6 +60,7 @@ class CommentFeedItem(BaseModel):
     prev_id: Optional[int] = None
     next_id: Optional[int] = None
     is_deleted: bool = False
+    points: int = 0
     created_at: datetime
     updated_at: datetime
     username: str

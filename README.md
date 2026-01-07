@@ -6,12 +6,12 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 
 - User registration and authentication (JWT)
 - Post submission (URL or text posts)
-- Upvoting/downvoting posts
+- Upvoting posts
 - Comment voting
 - Threaded comments
 - Notifications for comments and replies
 - Rate limiting
-- Feed filters (story/ask/show/job) and sorting (new/top/best)
+- Feed filters (story/ask/show/job) and sorting (new/past)
 - Post search
 - Recent comments feed
 - Responsive UI
@@ -45,15 +45,14 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 ## Caching and Rate Limiting
 
 - **Feed cache**: Redis caches feed responses for 5 minutes (TTL). Cache is invalidated on new posts and new comments via a feed version bump.
-- **Score cache**: Post scores are cached in Redis for 5 minutes (TTL).
-- **Rate limits**: Authenticated requests are limited to 120 requests/minute per user. Unauthenticated requests are limited to 20 requests/minute per IP. Limits apply to endpoints using the rate limit dependency.
+- **Rate limits**: Authenticated requests are limited to 120 requests/minute per user. Unauthenticated requests are limited to 200 requests/minute per IP. Limits apply to endpoints using the rate limit dependency.
 - **Logout revocation**: Token revocation is stored in Redis. If Redis is disabled or unavailable, logout will not invalidate existing tokens.
 
 ## Voting and Ranking
 
-- **Post score**: The score is the sum of votes on the post. Posts are ranked by score for `top`/`best` sorting.
-- **Comment score**: The score is the sum of votes on the comment plus all nested replies. In a post discussion, comments are ordered by score (desc), then `created_at` (desc) for ties.
-- **Comments feed**: The `/comments` page is ordered by `created_at` (desc) regardless of score.
+- **Post ranking**: Posts use points (sum of votes) and a time decay for `past` sorting. `new` sorting is by `created_at` (desc).
+- **Comments ordering**: In a post discussion, comments are ordered by `created_at` (desc) with nested replies also sorted by `created_at` (desc).
+- **Comments feed**: The `/comments` page is ordered by `created_at` (desc).
 
 ## Setup
 
@@ -104,6 +103,24 @@ pip install -r requirements.txt
 export POSTGRES_URL=postgresql://user:password@localhost:5432/hackernews
 export REDIS_URL=redis://localhost:6379
 uvicorn main:app --reload
+```
+
+## Connecting to Docker services
+
+PostgreSQL:
+```bash
+docker compose exec postgres psql -U user -d hackernews
+```
+
+Redis:
+```bash
+docker compose exec redis redis-cli
+```
+
+If you are running the dev compose file, add `-f docker-compose.dev.yml`:
+```bash
+docker compose -f docker-compose.dev.yml exec postgres psql -U user -d hackernews
+docker compose -f docker-compose.dev.yml exec redis redis-cli
 ```
 
 ## Tests (Dockerized by default)
@@ -194,11 +211,10 @@ Coverage (latest run):
 - `POST /posts/` - Create new post
 - `GET /posts/search` - Search posts
 - `GET /posts/{post_id}` - Get single post
-- `PUT /posts/{post_id}` - Update post
-- `DELETE /posts/{post_id}` - Delete post
 - `POST /posts/{post_id}/vote` - Vote on post
 - `GET /posts/{post_id}/vote` - Get current user's vote
 - `DELETE /posts/{post_id}/vote` - Remove current user's vote
+- `POST /posts/votes/bulk` - Get current user's votes for multiple posts
 
 ### Comments
 - `GET /posts/{post_id}/comments` - Get comments for post
@@ -210,6 +226,7 @@ Coverage (latest run):
 - `POST /comments/{comment_id}/vote` - Vote on comment
 - `GET /comments/{comment_id}/vote` - Get current user's comment vote
 - `DELETE /comments/{comment_id}/vote` - Remove current user's comment vote
+- `POST /comments/votes/bulk` - Get current user's votes for multiple comments
 
 ### Notifications
 - `GET /notifications/` - Get user notifications

@@ -2,7 +2,7 @@ from datetime import date, datetime, time, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from models import Post, User, Comment
-from schemas import PostCreate, PostUpdate
+from schemas import PostCreate
 from fastapi import HTTPException
 from cache import redis_get, redis_setex, redis_incr
 import json
@@ -206,60 +206,6 @@ class PostService:
         redis_setex(cache_key, PostService.FEED_CACHE_TTL_SECONDS, json.dumps(posts_with_username))
 
         return posts_with_username
-
-    @staticmethod
-    def update_post(db: Session, post_id: int, post_update: PostUpdate, user_id: int) -> dict:
-        post = db.query(Post).filter(Post.id == post_id).first()
-        if not post:
-            raise HTTPException(status_code=404, detail="Post not found")
-        if post.user_id != user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to update this post")
-
-        update_data = post_update.model_dump(exclude_unset=True)
-        if "post_type" in update_data and update_data["post_type"] is None:
-            update_data.pop("post_type")
-        if "post_type" in update_data:
-            allowed_types = {"story", "ask", "show", "job"}
-            if update_data["post_type"] not in allowed_types:
-                raise HTTPException(status_code=400, detail="Invalid post type")
-        for field, value in update_data.items():
-            setattr(post, field, value)
-
-        db.commit()
-        db.refresh(post)
-        
-        # Get username
-        user = db.query(User).filter(User.id == post.user_id).first()
-
-        # Invalidate feeds to reflect updated posts.
-        PostService.bump_feed_cache_version()
-        
-        comment_count = db.query(func.count(Comment.id)).filter(Comment.post_id == post.id).scalar() or 0
-
-        return {
-            "id": post.id,
-            "title": post.title,
-            "url": post.url,
-            "text": post.text,
-            "post_type": post.post_type,
-            "points": post.points,
-            "comment_count": comment_count,
-            "user_id": post.user_id,
-            "created_at": PostService._serialize_datetime(post.created_at),
-            "username": user.username
-        }
-
-    @staticmethod
-    def delete_post(db: Session, post_id: int, user_id: int):
-        post = db.query(Post).filter(Post.id == post_id).first()
-        if not post:
-            raise HTTPException(status_code=404, detail="Post not found")
-        if post.user_id != user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to delete this post")
-
-        db.delete(post)
-        db.commit()
-        PostService.bump_feed_cache_version()
 
     @staticmethod
     def adjust_post_points(db: Session, post_id: int, delta: int) -> None:
