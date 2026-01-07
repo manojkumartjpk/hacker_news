@@ -129,7 +129,7 @@ def test_bump_feed_cache_version_noop(monkeypatch):
 
 
 @pytest.mark.unit
-def test_adjust_post_points_updates(db_session):
+def test_vote_updates_post_points(db_session):
     user = User(username="derek", email="derek@example.com", hashed_password=get_password_hash("Password1!"))
     db_session.add(user)
     db_session.commit()
@@ -143,4 +143,3 @@ def test_adjust_post_points_updates(db_session):
     VoteService.vote_on_post(db_session, post.id, VoteCreate(vote_type=1), user.id)
     db_session.refresh(post)
     assert post.points == 1
-

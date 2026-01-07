@@ -1,11 +1,25 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
+from datetime import datetime, timezone
 from models import Comment, NotificationType, User, Post
 from schemas import CommentCreate, CommentUpdate
 from services.post_service import PostService
 from fastapi import HTTPException
 
 class CommentService:
+    @staticmethod
+    def _reply_rank_score(comment: dict) -> float:
+        created_at = comment.get("created_at")
+        if isinstance(created_at, datetime):
+            created_at_dt = created_at
+        else:
+            return float(comment.get("points") or 0)
+        if created_at_dt.tzinfo is None:
+            created_at_dt = created_at_dt.replace(tzinfo=timezone.utc)
+        age_hours = max((datetime.now(timezone.utc) - created_at_dt).total_seconds() / 3600.0, 0.0)
+        points = float(comment.get("points") or 0)
+        return (points - 1) / pow(age_hours + 2, 1.8)
+
     @staticmethod
     def _build_thread(rows: list[tuple[Comment, str]]) -> list[dict]:
         comments_dict: dict[int, dict] = {}
@@ -41,7 +55,7 @@ class CommentService:
 
         def sort_replies(node: dict) -> None:
             node["replies"].sort(
-                key=lambda item: item["created_at"],
+                key=CommentService._reply_rank_score,
                 reverse=True,
             )
             for reply in node["replies"]:
@@ -148,6 +162,8 @@ class CommentService:
         results = db.query(
             Comment,
             User.username
+        ).select_from(Comment).join(
+            User, Comment.user_id == User.id
         ).filter(
             Comment.post_id == post_id
         ).order_by(desc(Comment.created_at)).all()

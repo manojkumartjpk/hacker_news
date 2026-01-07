@@ -24,11 +24,13 @@ class VoteService:
                 post_id=post_id
             )
             db.add(db_vote)
+            db.query(Post).filter(Post.id == post_id).update(
+                {Post.points: Post.points + 1}
+            )
             try:
                 db.commit()
                 db.refresh(db_vote)
-                # Update post points after a new vote.
-                PostService.adjust_post_points(db, post_id, 1)
+                PostService.bump_feed_cache_version()
                 vote_obj = db_vote
             except IntegrityError:
                 db.rollback()
@@ -59,8 +61,11 @@ class VoteService:
         ).first()
         if existing_vote:
             db.delete(existing_vote)
+            db.query(Post).filter(Post.id == post_id).update(
+                {Post.points: Post.points - 1}
+            )
             db.commit()
-            PostService.adjust_post_points(db, post_id, -1)
+            PostService.bump_feed_cache_version()
 
     @staticmethod
     def get_user_votes_for_posts(db: Session, user_id: int, post_ids: list[int]) -> list[dict]:

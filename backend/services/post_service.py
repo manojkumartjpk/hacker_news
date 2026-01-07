@@ -208,18 +208,6 @@ class PostService:
         return posts_with_username
 
     @staticmethod
-    def adjust_post_points(db: Session, post_id: int, delta: int) -> None:
-        if delta == 0:
-            return None
-        updated = db.query(Post).filter(Post.id == post_id).update(
-            {Post.points: Post.points + delta}
-        )
-        if updated:
-            db.commit()
-            # Ranking depends on points, so invalidate cached feeds.
-            PostService.bump_feed_cache_version()
-
-    @staticmethod
     def search_posts(db: Session, query: str, skip: int = 0, limit: int = 30) -> list[dict]:
         if not query.strip():
             return []
