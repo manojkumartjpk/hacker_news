@@ -35,7 +35,7 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 ## Architecture
 
 - **PostgreSQL**: System of record for users, posts, comments, votes, notifications
-- **Redis**: Caching for feed data, write queue (Redis Streams), rate limiting
+- **Redis**: Caching for feed data and comment threads, write queue (Redis Streams), rate limiting
 - **REST API**: Clean separation between routers, services, models, and schemas
 
 ## CI/CD
@@ -45,6 +45,7 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 ## Caching and Rate Limiting
 
 - **Feed cache**: Redis caches feed responses for 5 minutes (TTL). New posts bump the feed version immediately; a background worker bumps every minute to capture votes/comments.
+- **Comment cache**: Comment threads are cached per post in Redis (5 minute TTL) with a per-post version key. Comment add/delete operations bump the version to invalidate stale threads.
 - **Rate limits**: Authenticated requests are limited to 120 requests/minute per user. Unauthenticated requests are limited to 200 requests/minute per IP. Limits apply to endpoints using the rate limit dependency.
 - **Logout revocation**: Token revocation is stored in Redis. If Redis is disabled or unavailable, logout will not invalidate existing tokens.
 
@@ -53,6 +54,11 @@ A full-stack Hacker News clone built with Next.js (frontend), FastAPI (backend),
 - **Post ranking**: Posts use points (sum of votes) and a time decay for `past` sorting. `new` sorting is by `created_at` (desc).
 - **Comments ordering**: In a post discussion, comments are ordered by `created_at` (desc) with nested replies also sorted by `created_at` (desc).
 - **Comments feed**: The `/comments` page is ordered by `created_at` (desc).
+
+## Performance and Queueing
+
+- **N+1 fixes**: Feed and comment views join users and aggregate comment counts in single queries to avoid per-row lookups.
+- **Write queue**: Votes and comment writes can be queued through Redis Streams when `WRITE_QUEUE_MODE=redis`. A background worker processes the queue, refreshes points, and bumps cache versions.
 
 ## Setup
 

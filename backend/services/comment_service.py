@@ -6,6 +6,7 @@ from models import Comment, NotificationType, User, Post, Notification
 from schemas import CommentCreate, CommentUpdate
 from cache import redis_get, redis_setex, redis_incr
 from services.queue_service import enqueue_write, queue_writes_enabled, WriteEventType
+from services.comment_ancestor_service import CommentAncestorService
 from fastapi import HTTPException
 
 class CommentService:
@@ -60,6 +61,59 @@ class CommentService:
         def sort_replies(node: dict) -> None:
             node["replies"].sort(
                 key=CommentService._reply_rank_score,
+                reverse=True,
+            )
+            for reply in node["replies"]:
+                sort_replies(reply)
+
+        top_level_comments.sort(
+            key=lambda item: item["created_at"],
+            reverse=True,
+        )
+        for comment in top_level_comments:
+            sort_replies(comment)
+
+        CommentService._apply_thread_navigation(top_level_comments)
+
+        return top_level_comments
+
+    @staticmethod
+    def _build_thread_from_cte(rows) -> list[dict]:
+        comments_dict: dict[int, dict] = {}
+        for row in rows:
+            data = row._mapping
+            comments_dict[data["id"]] = {
+                "id": data["id"],
+                "text": data["text"],
+                "user_id": data["user_id"],
+                "post_id": data["post_id"],
+                "parent_id": data["parent_id"],
+                "root_id": data["root_id"],
+                "is_deleted": data["is_deleted"],
+                "points": data["points"],
+                "prev_id": None,
+                "next_id": None,
+                "created_at": data["created_at"],
+                "updated_at": data["updated_at"],
+                "username": data["username"],
+                "replies": []
+            }
+
+        top_level_comments: list[dict] = []
+        for comment_id, comment in comments_dict.items():
+            parent_id = comment["parent_id"]
+            if parent_id is None:
+                top_level_comments.append(comment)
+                continue
+            parent = comments_dict.get(parent_id)
+            if parent:
+                parent["replies"].append(comment)
+            else:
+                top_level_comments.append(comment)
+
+        def sort_replies(node: dict) -> None:
+            node["replies"].sort(
+                key=lambda item: item["created_at"],
                 reverse=True,
             )
             for reply in node["replies"]:
@@ -159,12 +213,12 @@ class CommentService:
             root_id=root_id,
         )
         db.add(db_comment)
-        db.commit()
-        db.refresh(db_comment)
+        db.flush()
         if comment.parent_id is None:
             db_comment.root_id = db_comment.id
-            db.commit()
-            db.refresh(db_comment)
+        CommentAncestorService.create_ancestors_for_comments(db, [db_comment])
+        db.commit()
+        db.refresh(db_comment)
 
         # Create notification
         CommentService._create_notification_for_comment(db, db_comment)

@@ -28,6 +28,7 @@ from models import (
     Vote,
 )
 from services.comment_service import CommentService
+from services.comment_ancestor_service import CommentAncestorService
 from services.queue_service import WRITE_STREAM_KEY, WriteEventType
 
 
@@ -181,9 +182,9 @@ def _load_parent_map(db, parent_ids: set[int]) -> dict[int, dict]:
     if not parent_ids:
         return {}
     rows = db.execute(
-        select(Comment.id, Comment.post_id, Comment.root_id).where(Comment.id.in_(parent_ids))
+        select(Comment.id, Comment.post_id, Comment.root_id, Comment.user_id).where(Comment.id.in_(parent_ids))
     ).all()
-    return {row[0]: {"post_id": row[1], "root_id": row[2]} for row in rows}
+    return {row[0]: {"post_id": row[1], "root_id": row[2], "user_id": row[3]} for row in rows}
 
 
 def _apply_comment_adds(
@@ -218,11 +219,47 @@ def _apply_comment_adds(
     comment_cache_bumps: set[int] = set()
     if created_comments:
         db.flush()
+        post_ids = {comment.post_id for comment in created_comments}
+        actor_ids = {comment.user_id for comment in created_comments}
+        post_rows = db.execute(
+            select(Post.id, Post.user_id, Post.title).where(Post.id.in_(post_ids))
+        ).all()
+        user_rows = db.execute(
+            select(User.id, User.username).where(User.id.in_(actor_ids))
+        ).all()
+        post_map = {row[0]: {"user_id": row[1], "title": row[2]} for row in post_rows}
+        user_map = {row[0]: row[1] for row in user_rows}
         for comment in created_comments:
             if comment.parent_id is None:
                 comment.root_id = comment.id
-            _create_notifications(db, comment)
+            post_info = post_map.get(comment.post_id)
+            actor_username = user_map.get(comment.user_id)
+            if not post_info or not actor_username:
+                continue
+
+            if comment.user_id != post_info["user_id"]:
+                db.add(Notification(
+                    user_id=post_info["user_id"],
+                    actor_id=comment.user_id,
+                    type=NotificationType.COMMENT_ON_POST,
+                    post_id=comment.post_id,
+                    comment_id=comment.id,
+                    message=f"{actor_username} commented on your post '{post_info['title']}'",
+                ))
+
+            if comment.parent_id:
+                parent = parent_map.get(comment.parent_id)
+                if parent and comment.user_id != parent["user_id"]:
+                    db.add(Notification(
+                        user_id=parent["user_id"],
+                        actor_id=comment.user_id,
+                        type=NotificationType.REPLY_TO_COMMENT,
+                        post_id=comment.post_id,
+                        comment_id=comment.id,
+                        message=f"{actor_username} replied to your comment",
+                    ))
             comment_cache_bumps.add(comment.post_id)
+        CommentAncestorService.create_ancestors_for_comments(db, created_comments)
     return comment_cache_bumps
 
 
@@ -248,66 +285,133 @@ def _apply_comment_deletes(db, events: list[dict]) -> set[int]:
     return comment_cache_bumps
 
 
-def _apply_post_vote_adds(db, events: list[dict], valid_posts: set[int]) -> set[int]:
+def _apply_post_vote_adds(db, events: list[dict], valid_posts: set[int]) -> dict[int, int]:
     pairs = {
         (int(e.get("user_id") or 0), int(e.get("post_id") or 0))
         for e in events
         if int(e.get("post_id") or 0) in valid_posts
     }
     if not pairs:
-        return set()
+        return {}
+    existing_pairs = set(db.execute(
+        select(Vote.user_id, Vote.post_id).where(
+            tuple_(Vote.user_id, Vote.post_id).in_(pairs)
+        )
+    ).all())
+    new_pairs = pairs - existing_pairs
+    if not new_pairs:
+        return {}
     stmt = (
         pg_insert(Vote)
-        .values([{"user_id": u, "post_id": p} for u, p in pairs])
+        .values([{"user_id": u, "post_id": p} for u, p in new_pairs])
         .on_conflict_do_nothing(index_elements=["user_id", "post_id"])
         if db.bind.dialect.name == "postgresql"
-        else sqlite_insert(Vote).values([{"user_id": u, "post_id": p} for u, p in pairs]).prefix_with("OR IGNORE")
+        else sqlite_insert(Vote).values([{"user_id": u, "post_id": p} for u, p in new_pairs]).prefix_with("OR IGNORE")
     )
     db.execute(stmt)
-    return {p for _, p in pairs}
+    deltas: dict[int, int] = {}
+    for _, post_id in new_pairs:
+        deltas[post_id] = deltas.get(post_id, 0) + 1
+    return deltas
 
 
-def _apply_post_vote_removes(db, events: list[dict], valid_posts: set[int]) -> set[int]:
+def _apply_post_vote_removes(db, events: list[dict], valid_posts: set[int]) -> dict[int, int]:
     pairs = {
         (int(e.get("user_id") or 0), int(e.get("post_id") or 0))
         for e in events
         if int(e.get("post_id") or 0) in valid_posts
     }
     if not pairs:
-        return set()
-    db.execute(delete(Vote).where(tuple_(Vote.user_id, Vote.post_id).in_(pairs)))
-    return {p for _, p in pairs}
+        return {}
+    existing_pairs = set(db.execute(
+        select(Vote.user_id, Vote.post_id).where(
+            tuple_(Vote.user_id, Vote.post_id).in_(pairs)
+        )
+    ).all())
+    if not existing_pairs:
+        return {}
+    db.execute(delete(Vote).where(
+        tuple_(Vote.user_id, Vote.post_id).in_(existing_pairs)
+    ))
+    deltas: dict[int, int] = {}
+    for _, post_id in existing_pairs:
+        deltas[post_id] = deltas.get(post_id, 0) + 1
+    return deltas
 
 
-def _apply_comment_vote_adds(db, events: list[dict], valid_comments: set[int]) -> set[int]:
+def _apply_post_vote_point_deltas(db, deltas: dict[int, int]) -> None:
+    for post_id, delta in deltas.items():
+        if delta == 0:
+            continue
+        db.query(Post).filter(Post.id == post_id).update(
+            {Post.points: Post.points + delta},
+            synchronize_session=False,
+        )
+
+
+def _apply_comment_vote_adds(db, events: list[dict], valid_comments: set[int]) -> dict[int, int]:
     pairs = {
         (int(e.get("user_id") or 0), int(e.get("comment_id") or 0))
         for e in events
         if int(e.get("comment_id") or 0) in valid_comments
     }
     if not pairs:
-        return set()
+        return {}
+    existing_pairs = set(db.execute(
+        select(CommentVote.user_id, CommentVote.comment_id).where(
+            tuple_(CommentVote.user_id, CommentVote.comment_id).in_(pairs)
+        )
+    ).all())
+    new_pairs = pairs - existing_pairs
+    if not new_pairs:
+        return {}
     stmt = (
         pg_insert(CommentVote)
-        .values([{"user_id": u, "comment_id": c} for u, c in pairs])
+        .values([{"user_id": u, "comment_id": c} for u, c in new_pairs])
         .on_conflict_do_nothing(index_elements=["user_id", "comment_id"])
         if db.bind.dialect.name == "postgresql"
-        else sqlite_insert(CommentVote).values([{"user_id": u, "comment_id": c} for u, c in pairs]).prefix_with("OR IGNORE")
+        else sqlite_insert(CommentVote).values([{"user_id": u, "comment_id": c} for u, c in new_pairs]).prefix_with("OR IGNORE")
     )
     db.execute(stmt)
-    return {c for _, c in pairs}
+    deltas: dict[int, int] = {}
+    for _, comment_id in new_pairs:
+        deltas[comment_id] = deltas.get(comment_id, 0) + 1
+    return deltas
 
 
-def _apply_comment_vote_removes(db, events: list[dict], valid_comments: set[int]) -> set[int]:
+def _apply_comment_vote_removes(db, events: list[dict], valid_comments: set[int]) -> dict[int, int]:
     pairs = {
         (int(e.get("user_id") or 0), int(e.get("comment_id") or 0))
         for e in events
         if int(e.get("comment_id") or 0) in valid_comments
     }
     if not pairs:
-        return set()
-    db.execute(delete(CommentVote).where(tuple_(CommentVote.user_id, CommentVote.comment_id).in_(pairs)))
-    return {c for _, c in pairs}
+        return {}
+    existing_pairs = set(db.execute(
+        select(CommentVote.user_id, CommentVote.comment_id).where(
+            tuple_(CommentVote.user_id, CommentVote.comment_id).in_(pairs)
+        )
+    ).all())
+    if not existing_pairs:
+        return {}
+    db.execute(delete(CommentVote).where(
+        tuple_(CommentVote.user_id, CommentVote.comment_id).in_(existing_pairs)
+    ))
+    deltas: dict[int, int] = {}
+    for _, comment_id in existing_pairs:
+        deltas[comment_id] = deltas.get(comment_id, 0) + 1
+    return deltas
+
+
+def _apply_comment_vote_point_deltas(db, deltas: dict[int, int]) -> None:
+    for comment_id, delta in deltas.items():
+        if delta == 0:
+            continue
+        db.query(Comment).filter(Comment.id == comment_id).update(
+            {Comment.points: Comment.points + delta},
+            synchronize_session=False,
+        )
+        CommentAncestorService.apply_vote_delta(db, comment_id, delta)
 
 
 def _process_events(events: list[dict]) -> bool:
@@ -315,8 +419,8 @@ def _process_events(events: list[dict]) -> bool:
         return True
 
     comment_cache_bumps: set[int] = set()
-    post_point_ids: set[int] = set()
-    comment_point_ids: set[int] = set()
+    post_vote_deltas: dict[int, int] = {}
+    comment_vote_deltas: dict[int, int] = {}
 
     with SessionLocal() as db:
         try:
@@ -343,33 +447,33 @@ def _process_events(events: list[dict]) -> bool:
                 if buckets[WriteEventType.POST_VOTE_ADD]:
                     post_ids = {int(e.get("post_id") or 0) for e in buckets[WriteEventType.POST_VOTE_ADD]}
                     valid_posts = _fetch_valid_post_ids(db, post_ids)
-                    post_point_ids.update(
-                        _apply_post_vote_adds(db, buckets[WriteEventType.POST_VOTE_ADD], valid_posts)
-                    )
+                    deltas = _apply_post_vote_adds(db, buckets[WriteEventType.POST_VOTE_ADD], valid_posts)
+                    for post_id, count in deltas.items():
+                        post_vote_deltas[post_id] = post_vote_deltas.get(post_id, 0) + count
 
                 if buckets[WriteEventType.POST_VOTE_REMOVE]:
                     post_ids = {int(e.get("post_id") or 0) for e in buckets[WriteEventType.POST_VOTE_REMOVE]}
                     valid_posts = _fetch_valid_post_ids(db, post_ids)
-                    post_point_ids.update(
-                        _apply_post_vote_removes(db, buckets[WriteEventType.POST_VOTE_REMOVE], valid_posts)
-                    )
+                    deltas = _apply_post_vote_removes(db, buckets[WriteEventType.POST_VOTE_REMOVE], valid_posts)
+                    for post_id, count in deltas.items():
+                        post_vote_deltas[post_id] = post_vote_deltas.get(post_id, 0) - count
 
                 if buckets[WriteEventType.COMMENT_VOTE_ADD]:
                     comment_ids = {int(e.get("comment_id") or 0) for e in buckets[WriteEventType.COMMENT_VOTE_ADD]}
                     valid_comments = _fetch_valid_comment_ids(db, comment_ids)
-                    comment_point_ids.update(
-                        _apply_comment_vote_adds(db, buckets[WriteEventType.COMMENT_VOTE_ADD], valid_comments)
-                    )
+                    deltas = _apply_comment_vote_adds(db, buckets[WriteEventType.COMMENT_VOTE_ADD], valid_comments)
+                    for comment_id, count in deltas.items():
+                        comment_vote_deltas[comment_id] = comment_vote_deltas.get(comment_id, 0) + count
 
                 if buckets[WriteEventType.COMMENT_VOTE_REMOVE]:
                     comment_ids = {int(e.get("comment_id") or 0) for e in buckets[WriteEventType.COMMENT_VOTE_REMOVE]}
                     valid_comments = _fetch_valid_comment_ids(db, comment_ids)
-                    comment_point_ids.update(
-                        _apply_comment_vote_removes(db, buckets[WriteEventType.COMMENT_VOTE_REMOVE], valid_comments)
-                    )
+                    deltas = _apply_comment_vote_removes(db, buckets[WriteEventType.COMMENT_VOTE_REMOVE], valid_comments)
+                    for comment_id, count in deltas.items():
+                        comment_vote_deltas[comment_id] = comment_vote_deltas.get(comment_id, 0) - count
 
-                _refresh_post_points(db, post_point_ids)
-                _refresh_comment_points(db, comment_point_ids)
+                _apply_post_vote_point_deltas(db, post_vote_deltas)
+                _apply_comment_vote_point_deltas(db, comment_vote_deltas)
         except Exception:
             LOGGER.exception("Failed processing write events batch")
             return False

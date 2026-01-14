@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from models import CommentVote, Comment
+from services.comment_ancestor_service import CommentAncestorService
 from schemas import CommentVoteCreate
 from services.queue_service import enqueue_write, queue_writes_enabled, WriteEventType
 from fastapi import HTTPException
@@ -34,6 +35,7 @@ class CommentVoteService:
         db.query(Comment).filter(Comment.id == comment_id).update(
             {Comment.points: Comment.points + 1}
         )
+        CommentAncestorService.apply_vote_delta(db, comment_id, 1)
         try:
             db.commit()
             db.refresh(db_vote)
@@ -74,6 +76,7 @@ class CommentVoteService:
             db.query(Comment).filter(Comment.id == comment_id).update(
                 {Comment.points: Comment.points - 1}
             )
+            CommentAncestorService.apply_vote_delta(db, comment_id, -1)
             db.commit()
 
     @staticmethod

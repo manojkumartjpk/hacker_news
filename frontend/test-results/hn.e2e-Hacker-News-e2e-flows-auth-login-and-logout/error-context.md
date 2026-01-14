@@ -1,0 +1,107 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - table [ref=e2]:
+    - rowgroup [ref=e3]:
+      - row "Hacker News Hacker Newsnew | past | best | comments | ask | show | jobs | submit login" [ref=e4]:
+        - cell "Hacker News Hacker Newsnew | past | best | comments | ask | show | jobs | submit login" [ref=e5]:
+          - table [ref=e6]:
+            - rowgroup [ref=e7]:
+              - row "Hacker News Hacker Newsnew | past | best | comments | ask | show | jobs | submit login" [ref=e8]:
+                - cell "Hacker News" [ref=e9]:
+                  - link "Hacker News" [ref=e10] [cursor=pointer]:
+                    - /url: /
+                    - img "Hacker News" [ref=e11]
+                - cell "Hacker Newsnew | past | best | comments | ask | show | jobs | submit" [ref=e12]:
+                  - generic [ref=e13]:
+                    - link "Hacker News" [ref=e15] [cursor=pointer]:
+                      - /url: /
+                    - link "new" [ref=e16] [cursor=pointer]:
+                      - /url: /
+                    - text: "|"
+                    - link "past" [ref=e17] [cursor=pointer]:
+                      - /url: /?sort=top
+                    - text: "|"
+                    - link "best" [ref=e18] [cursor=pointer]:
+                      - /url: /?sort=best
+                    - text: "|"
+                    - link "comments" [ref=e19] [cursor=pointer]:
+                      - /url: /comments
+                    - text: "|"
+                    - link "ask" [ref=e20] [cursor=pointer]:
+                      - /url: /ask
+                    - text: "|"
+                    - link "show" [ref=e21] [cursor=pointer]:
+                      - /url: /show
+                    - text: "|"
+                    - link "jobs" [ref=e22] [cursor=pointer]:
+                      - /url: /jobs
+                    - text: "|"
+                    - link "submit" [ref=e23] [cursor=pointer]:
+                      - /url: /submit
+                - cell "login" [ref=e24]:
+                  - link "login" [ref=e26] [cursor=pointer]:
+                    - /url: /login
+      - row [ref=e27]
+      - 'row "Login Username: Password: Login Create account" [ref=e28]':
+        - 'cell "Login Username: Password: Login Create account" [ref=e29]':
+          - table [ref=e30]:
+            - rowgroup [ref=e31]:
+              - row "Login" [ref=e32]:
+                - cell "Login" [ref=e33]
+              - 'row "Username: Password: Login Create account" [ref=e34]':
+                - 'cell "Username: Password: Login Create account" [ref=e35]':
+                  - table [ref=e37]:
+                    - rowgroup [ref=e38]:
+                      - row "Username:" [ref=e39]:
+                        - cell "Username:" [ref=e40]
+                        - cell [ref=e41]:
+                          - textbox "Enter your username" [ref=e42]
+                      - row "Password:" [ref=e43]:
+                        - cell "Password:" [ref=e44]
+                        - cell [ref=e45]:
+                          - textbox "Enter your password" [ref=e46]
+                      - row "Login" [ref=e47]:
+                        - cell [ref=e48]
+                        - cell "Login" [ref=e49]:
+                          - button "Login" [ref=e50] [cursor=pointer]
+                  - link "Create account" [ref=e52] [cursor=pointer]:
+                    - /url: /register
+      - row [ref=e53]:
+        - cell [ref=e54]
+      - row "Guidelines | FAQ | Lists | API | Security | Legal | Apply to YC | Contact Search:" [ref=e55]:
+        - cell "Guidelines | FAQ | Lists | API | Security | Legal | Apply to YC | Contact Search:" [ref=e56]:
+          - table [ref=e57]:
+            - rowgroup [ref=e58]:
+              - row "Guidelines | FAQ | Lists | API | Security | Legal | Apply to YC | Contact Search:" [ref=e59]:
+                - cell "Guidelines | FAQ | Lists | API | Security | Legal | Apply to YC | Contact Search:" [ref=e60]:
+                  - generic [ref=e62]:
+                    - link "Guidelines" [ref=e63] [cursor=pointer]:
+                      - /url: https://news.ycombinator.com/newsguidelines.html
+                    - text: "|"
+                    - link "FAQ" [ref=e64] [cursor=pointer]:
+                      - /url: https://news.ycombinator.com/newsfaq.html
+                    - text: "|"
+                    - link "Lists" [ref=e65] [cursor=pointer]:
+                      - /url: https://news.ycombinator.com/lists
+                    - text: "|"
+                    - link "API" [ref=e66] [cursor=pointer]:
+                      - /url: https://news.ycombinator.com/api
+                    - text: "|"
+                    - link "Security" [ref=e67] [cursor=pointer]:
+                      - /url: https://news.ycombinator.com/security.html
+                    - text: "|"
+                    - link "Legal" [ref=e68] [cursor=pointer]:
+                      - /url: https://news.ycombinator.com/legal
+                    - text: "|"
+                    - link "Apply to YC" [ref=e69] [cursor=pointer]:
+                      - /url: https://www.ycombinator.com/apply/
+                    - text: "|"
+                    - link "Contact" [ref=e70] [cursor=pointer]:
+                      - /url: mailto:hn@ycombinator.com
+                  - generic [ref=e72]:
+                    - text: "Search:"
+                    - textbox [ref=e73]
+  - alert [ref=e74]
+```

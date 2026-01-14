@@ -21,7 +21,7 @@ engine = create_engine(POSTGRES_URL, connect_args=connect_args, echo=True, **eng
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Import all models to ensure they are registered with SQLAlchemy
-from models import User, Post, Comment, Vote, Notification, CommentVote
+from models import User, Post, Comment, CommentAncestor, Vote, Notification, CommentVote
 
 # Dependency to get DB session
 def get_db():

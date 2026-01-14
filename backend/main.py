@@ -49,7 +49,8 @@ from routers import (
     comment_actions_router,
     notifications_router,
     comments_feed_router,
-    comment_votes_router
+    comment_votes_router,
+    comment_ancestors_router
 )
 
 # Include routers with prefixes
@@ -60,6 +61,7 @@ app.include_router(comments_router, prefix="/posts", tags=["comments"])
 app.include_router(comments_feed_router, prefix="/comments", tags=["comments"])
 app.include_router(comment_actions_router, prefix="/comments", tags=["comments"])
 app.include_router(comment_votes_router, prefix="/comments", tags=["comments"])
+app.include_router(comment_ancestors_router, tags=["comment-ancestors"])
 app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 
 @app.get("/")

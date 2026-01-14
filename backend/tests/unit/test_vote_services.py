@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from auth import get_password_hash
 from models import User, Post, Comment
 from schemas import VoteCreate, CommentVoteCreate
+import services.vote_service as vote_service
 from services.vote_service import VoteService
 from services.comment_vote_service import CommentVoteService
 
@@ -101,3 +102,26 @@ def test_comment_vote_service_updates_vote(db_session):
     assert same_vote.id == vote.id
     db_session.refresh(comment)
     assert comment.points == 1
+
+
+@pytest.mark.unit
+def test_vote_service_queues_when_enabled(db_session, monkeypatch):
+    user, post = _create_user_post(db_session, username="queued-vote")
+
+    monkeypatch.setattr(vote_service, "queue_writes_enabled", lambda: True)
+    monkeypatch.setattr(vote_service, "enqueue_write", lambda *args, **kwargs: "req-3")
+
+    result = VoteService.vote_on_post(db_session, post.id, VoteCreate(vote_type=1), user.id)
+    assert result == "req-3"
+    assert db_session.query(Post).filter(Post.id == post.id).first().points == post.points
+
+
+@pytest.mark.unit
+def test_remove_vote_queues_when_enabled(db_session, monkeypatch):
+    user, post = _create_user_post(db_session, username="queued-unvote")
+
+    monkeypatch.setattr(vote_service, "queue_writes_enabled", lambda: True)
+    monkeypatch.setattr(vote_service, "enqueue_write", lambda *args, **kwargs: "req-4")
+
+    result = VoteService.remove_vote_on_post(db_session, post.id, user.id)
+    assert result == "req-4"

@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+from .comment import CommentWithUser
 
 ALLOWED_POST_TYPES = {"story", "ask", "show", "job"}
 
@@ -39,3 +40,6 @@ class Post(PostBase):
 
 class PostWithUser(Post):
     username: str
+
+class PostWithComments(Post):
+    comments: List["CommentWithUser"] = Field(default_factory=list)

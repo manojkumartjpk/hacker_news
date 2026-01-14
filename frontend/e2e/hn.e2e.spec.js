@@ -76,6 +76,36 @@ const setAuthCookie = async (page, token, csrfToken) => {
   }]);
 };
 
+const waitForText = async (page, text, { refresh = false, retries = 6 } = {}) => {
+  const locator = page.getByText(text);
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    if ((await locator.count()) > 0 && await locator.first().isVisible()) {
+      return;
+    }
+    if (refresh) {
+      await page.reload();
+    } else {
+      await page.waitForTimeout(500);
+    }
+  }
+  await expect(locator).toBeVisible();
+};
+
+const waitForTextToDisappear = async (page, text, { refresh = false, retries = 6 } = {}) => {
+  const locator = page.getByText(text);
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    if ((await locator.count()) === 0) {
+      return;
+    }
+    if (refresh) {
+      await page.reload();
+    } else {
+      await page.waitForTimeout(500);
+    }
+  }
+  await expect(locator).toHaveCount(0);
+};
+
 test.describe.serial('Hacker News e2e flows', () => {
   const state = {
     suffix: Date.now(),
@@ -213,7 +243,10 @@ test.describe.serial('Hacker News e2e flows', () => {
     const pointsLocator = page.locator('.subline .points');
     const pointsBefore = await pointsLocator.textContent();
     await page.locator('div.votearrow[title="upvote"]').first().click();
-    await expect(pointsLocator).not.toHaveText(pointsBefore || '');
+    await expect.poll(
+      async () => (await pointsLocator.textContent()) || '',
+      { timeout: 10000 }
+    ).not.toBe((pointsBefore || '').trim());
   });
 
   test('search: results, pagination, no results', async ({ page }) => {
@@ -242,7 +275,7 @@ test.describe.serial('Hacker News e2e flows', () => {
     ));
     await page.getByRole('button', { name: 'add comment' }).click();
     await notifyCreateResponse;
-    await expect(page.getByText(state.comments.notifyText)).toBeVisible();
+    await waitForText(page, state.comments.notifyText, { refresh: true });
 
     state.comments.editText = `E2E Edit Comment ${state.suffix}`;
     await page.locator('textarea.comment-box').first().fill(state.comments.editText);
@@ -251,7 +284,7 @@ test.describe.serial('Hacker News e2e flows', () => {
     ));
     await page.getByRole('button', { name: 'add comment' }).click();
     await editCreateResponse;
-    await expect(page.getByText(state.comments.editText)).toBeVisible();
+    await waitForText(page, state.comments.editText, { refresh: true });
 
     const editRow = page.locator('tr.comtr', { hasText: state.comments.editText });
     await editRow.getByRole('link', { name: 'edit' }).click();
@@ -264,7 +297,7 @@ test.describe.serial('Hacker News e2e flows', () => {
     ));
     await editForm.getByRole('button', { name: 'update' }).click();
     await editUpdateResponse;
-    await expect(page.getByText(state.comments.updatedText)).toBeVisible();
+    await waitForText(page, state.comments.updatedText, { refresh: true });
 
     const replyBase = page.locator('tr.comtr', { hasText: state.comments.notifyText });
     const replyLink = replyBase.getByRole('link', { name: 'reply' });
@@ -281,7 +314,7 @@ test.describe.serial('Hacker News e2e flows', () => {
     await page.getByRole('button', { name: 'reply' }).click();
     await replyCreateResponse;
     await page.waitForURL(/\/post\/\d+/);
-    await expect(page.getByText(state.comments.replyText)).toBeVisible();
+    await waitForText(page, state.comments.replyText, { refresh: true });
 
     const updatedRow = page.locator('tr.comtr', { hasText: state.comments.updatedText });
     await updatedRow.getByRole('link', { name: 'delete' }).click();
@@ -290,10 +323,10 @@ test.describe.serial('Hacker News e2e flows', () => {
     ));
     await updatedRow.getByRole('button', { name: 'Yes' }).click();
     await deleteResponse;
-    await expect(page.getByText(state.comments.updatedText)).not.toBeVisible();
+    await waitForTextToDisappear(page, state.comments.updatedText, { refresh: true });
 
     await page.goto('/comments');
-    await expect(page.getByText(state.comments.notifyText)).toBeVisible();
+    await waitForText(page, state.comments.notifyText, { refresh: true });
   });
 
   test('notifications: see and mark as read', async ({ page }) => {

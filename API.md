@@ -2,6 +2,12 @@
 
 Base URL: `http://localhost:8000`
 
+## Performance and Queueing Notes
+
+- **N+1 fixes**: Feeds and comment lists join user info and aggregate comment counts in single queries to avoid per-row lookups.
+- **Redis caches**: Feed responses and per-post comment threads are cached with versioned keys (5 minute TTL). Cache versions are bumped on write events.
+- **Write queue**: When `WRITE_QUEUE_MODE=redis`, comment and vote writes return `202` with `{ "status": "queued", "request_id": "uuid" }`. When `WRITE_QUEUE_MODE=sync`, those endpoints return immediate `200`/`204` responses.
+
 ## Authentication
 Protected endpoints require a bearer token header (or an auth cookie):
 

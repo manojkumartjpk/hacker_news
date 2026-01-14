@@ -1,10 +1,15 @@
 from fastapi import Request, HTTPException, Depends
+import os
 from auth.deps import get_current_user_optional
 from models import User
 from cache import redis_get, redis_incr, redis_expire
 
 def rate_limit():
     """Rate limiting dependency using Redis."""
+    if os.getenv("RATE_LIMIT_ENABLED", "1").lower() in {"0", "false", "no", "off"}:
+        def dependency_disabled() -> bool:
+            return True
+        return dependency_disabled
     limit_user = 120
     limit_ip = 200
     window = 60

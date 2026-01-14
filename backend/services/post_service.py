@@ -1,11 +1,12 @@
 from datetime import date, datetime, time, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, select
 from models import Post, User, Comment
 from schemas import PostCreate
 from fastapi import HTTPException
 from cache import redis_get, redis_setex, redis_incr
 import json
+from services.comment_service import CommentService
 
 class PostService:
     FEED_CACHE_TTL_SECONDS = 300
@@ -124,6 +125,53 @@ class PostService:
             "created_at": PostService._serialize_datetime(post.created_at),
             "username": username
         }
+
+    @staticmethod
+    def get_post_with_comments_cte(db: Session, post_id: int) -> dict:
+        post = PostService.get_post(db, post_id)
+
+        base_query = select(
+            Comment.id.label("id"),
+            Comment.text.label("text"),
+            Comment.user_id.label("user_id"),
+            Comment.post_id.label("post_id"),
+            Comment.parent_id.label("parent_id"),
+            Comment.root_id.label("root_id"),
+            Comment.is_deleted.label("is_deleted"),
+            Comment.points.label("points"),
+            Comment.created_at.label("created_at"),
+            Comment.updated_at.label("updated_at"),
+            User.username.label("username"),
+        ).select_from(Comment).join(
+            User, Comment.user_id == User.id
+        ).where(
+            Comment.post_id == post_id,
+            Comment.parent_id.is_(None),
+        )
+
+        comment_tree = base_query.cte(name="comment_tree", recursive=True)
+        recursive_query = select(
+            Comment.id.label("id"),
+            Comment.text.label("text"),
+            Comment.user_id.label("user_id"),
+            Comment.post_id.label("post_id"),
+            Comment.parent_id.label("parent_id"),
+            Comment.root_id.label("root_id"),
+            Comment.is_deleted.label("is_deleted"),
+            Comment.points.label("points"),
+            Comment.created_at.label("created_at"),
+            Comment.updated_at.label("updated_at"),
+            User.username.label("username"),
+        ).select_from(Comment).join(
+            User, Comment.user_id == User.id
+        ).join(
+            comment_tree, Comment.parent_id == comment_tree.c.id
+        )
+
+        comment_tree = comment_tree.union_all(recursive_query)
+        rows = db.execute(select(comment_tree)).all()
+        post["comments"] = CommentService._build_thread_from_cte(rows)
+        return post
 
     @staticmethod
     def get_posts(

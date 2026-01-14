@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from auth import get_password_hash
 from models import User, Post, Comment, Notification
 from schemas import CommentCreate, CommentUpdate
+import services.comment_service as comment_service
 from services.comment_service import CommentService
 
 
@@ -261,3 +262,86 @@ def test_delete_comment_keeps_notifications(db_session):
     CommentService.delete_comment(db_session, comment["id"], commenter.id)
     notifications_after = db_session.query(Notification).filter(Notification.user_id == author.id).all()
     assert len(notifications_after) == 1
+
+
+@pytest.mark.unit
+def test_get_comments_for_post_uses_cache(db_session):
+    user = User(username="cache-comment", email="cache-comment@example.com", hashed_password=get_password_hash("Password1!"))
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    post = Post(title="Cache Post", url=None, text="Body", post_type="story", user_id=user.id)
+    db_session.add(post)
+    db_session.commit()
+    db_session.refresh(post)
+
+    first_comment = Comment(text="First cached", user_id=user.id, post_id=post.id, parent_id=None)
+    db_session.add(first_comment)
+    db_session.commit()
+
+    initial = CommentService.get_comments_for_post(db_session, post.id)
+    assert len(initial) == 1
+
+    second_comment = Comment(text="Second uncached", user_id=user.id, post_id=post.id, parent_id=None)
+    db_session.add(second_comment)
+    db_session.commit()
+
+    cached = CommentService.get_comments_for_post(db_session, post.id)
+    assert len(cached) == 1
+    assert cached[0]["text"] == "First cached"
+
+
+@pytest.mark.unit
+def test_create_comment_queued_when_queue_enabled(db_session, monkeypatch):
+    user = User(username="queued", email="queued@example.com", hashed_password=get_password_hash("Password1!"))
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    post = Post(title="Queued Post", url=None, text="Body", post_type="story", user_id=user.id)
+    db_session.add(post)
+    db_session.commit()
+    db_session.refresh(post)
+
+    monkeypatch.setattr(comment_service, "queue_writes_enabled", lambda: True)
+    monkeypatch.setattr(comment_service, "enqueue_write", lambda *args, **kwargs: "req-1")
+
+    result = CommentService.create_comment(
+        db_session,
+        CommentCreate(text="Queued comment", parent_id=None),
+        post.id,
+        user.id,
+    )
+
+    assert result["status"] == "queued"
+    assert result["request_id"] == "req-1"
+    assert db_session.query(Comment).count() == 0
+
+
+@pytest.mark.unit
+def test_delete_comment_queued_when_queue_enabled(db_session, monkeypatch):
+    user = User(username="queued-del", email="queued-del@example.com", hashed_password=get_password_hash("Password1!"))
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    post = Post(title="Queued Delete", url=None, text="Body", post_type="story", user_id=user.id)
+    db_session.add(post)
+    db_session.commit()
+    db_session.refresh(post)
+
+    comment = Comment(text="To delete", user_id=user.id, post_id=post.id, parent_id=None)
+    db_session.add(comment)
+    db_session.commit()
+    db_session.refresh(comment)
+
+    monkeypatch.setattr(comment_service, "queue_writes_enabled", lambda: True)
+    monkeypatch.setattr(comment_service, "enqueue_write", lambda *args, **kwargs: "req-2")
+
+    result = CommentService.delete_comment(db_session, comment.id, user.id)
+    db_session.refresh(comment)
+
+    assert result["status"] == "queued"
+    assert result["request_id"] == "req-2"
+    assert comment.is_deleted is False

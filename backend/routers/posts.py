@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
-from schemas import PostCreate, Post
+from schemas import PostCreate, Post, PostWithComments
 from services import PostService
 from auth.deps import get_current_user
 from models import User
@@ -45,6 +45,15 @@ def search_posts(
 ):
     """Search posts by title or text."""
     return PostService.search_posts(db, query=q, skip=skip, limit=limit)
+
+@router.get("/{post_id}/thread", response_model=PostWithComments)
+def get_post_with_thread(
+    post_id: int,
+    db: Session = Depends(get_db),
+    rate_limited: bool = Depends(rate_limit())
+):
+    """Fetch a post with all nested comments using a recursive CTE."""
+    return PostService.get_post_with_comments_cte(db, post_id)
 
 @router.get("/{post_id}", response_model=Post)
 def get_post(
